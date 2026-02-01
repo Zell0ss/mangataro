@@ -1,182 +1,96 @@
-"""
-SQLAlchemy ORM Models for Manga Tracker
-"""
-from datetime import datetime
-from enum import Enum as PyEnum
-from typing import List, Optional
-
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from datetime import datetime
+import enum
 
 Base = declarative_base()
 
 
-class MangaStatus(str, PyEnum):
-    """Enum for manga publication status"""
-    ONGOING = "ongoing"
-    COMPLETED = "completed"
-    HIATUS = "hiatus"
-    CANCELLED = "cancelled"
-    UNKNOWN = "unknown"
+class MangaStatus(str, enum.Enum):
+    reading = "reading"
+    completed = "completed"
+    on_hold = "on_hold"
+    plan_to_read = "plan_to_read"
 
 
 class Manga(Base):
-    """Manga model - stores manga metadata"""
     __tablename__ = "mangas"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(500), nullable=False, index=True)
-    url = Column(Text, nullable=False)
-    cover_image_url = Column(Text, nullable=True)
-    status = Column(
-        Enum(MangaStatus),
-        default=MangaStatus.UNKNOWN,
-        nullable=False,
-        index=True
-    )
-    description = Column(Text, nullable=True)
-    latest_chapter = Column(String(100), nullable=True)
-    last_checked = Column(DateTime, nullable=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    mangataro_id = Column(String(50))
+    title = Column(String(255), nullable=False, index=True)
+    alternative_titles = Column(Text)
+    cover_filename = Column(String(255))
+    mangataro_url = Column(String(500))
+    date_added = Column(DateTime)
+    last_checked = Column(DateTime)
+    status = Column(Enum(MangaStatus), default=MangaStatus.reading, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    scanlators = relationship(
-        "Scanlator",
-        secondary="manga_scanlator",
-        back_populates="mangas"
-    )
-    chapters = relationship(
-        "Chapter",
-        back_populates="manga",
-        cascade="all, delete-orphan"
-    )
-    scraping_errors = relationship(
-        "ScrapingError",
-        back_populates="manga",
-        cascade="all, delete-orphan"
-    )
-
-    def __repr__(self):
-        return f"<Manga(id={self.id}, title='{self.title}', status='{self.status}')>"
+    manga_scanlators = relationship("MangaScanlator", back_populates="manga", cascade="all, delete-orphan")
 
 
 class Scanlator(Base):
-    """Scanlator model - stores scanlation group information"""
     __tablename__ = "scanlators"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False, unique=True, index=True)
-    url = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True)
+    class_name = Column(String(100), nullable=False)
+    base_url = Column(String(255))
+    active = Column(Boolean, default=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    mangas = relationship(
-        "Manga",
-        secondary="manga_scanlator",
-        back_populates="scanlators"
-    )
-    chapters = relationship(
-        "Chapter",
-        back_populates="scanlator",
-        cascade="all, delete-orphan"
-    )
-    scraping_errors = relationship(
-        "ScrapingError",
-        back_populates="scanlator",
-        cascade="all, delete-orphan"
-    )
-
-    def __repr__(self):
-        return f"<Scanlator(id={self.id}, name='{self.name}')>"
+    manga_scanlators = relationship("MangaScanlator", back_populates="scanlator", cascade="all, delete-orphan")
 
 
 class MangaScanlator(Base):
-    """Association table for many-to-many relationship between Manga and Scanlator"""
     __tablename__ = "manga_scanlator"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    manga_id = Column(Integer, ForeignKey("mangas.id", ondelete="CASCADE"), nullable=False)
-    scanlator_id = Column(Integer, ForeignKey("scanlators.id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    manga_id = Column(Integer, ForeignKey("mangas.id", ondelete="CASCADE"), nullable=False, index=True)
+    scanlator_id = Column(Integer, ForeignKey("scanlators.id", ondelete="CASCADE"), nullable=False, index=True)
+    scanlator_manga_url = Column(String(500), nullable=False)
+    manually_verified = Column(Boolean, default=False)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    __table_args__ = (
-        UniqueConstraint("manga_id", "scanlator_id", name="unique_manga_scanlator"),
-    )
-
-    def __repr__(self):
-        return f"<MangaScanlator(manga_id={self.manga_id}, scanlator_id={self.scanlator_id})>"
+    # Relationships
+    manga = relationship("Manga", back_populates="manga_scanlators")
+    scanlator = relationship("Scanlator", back_populates="manga_scanlators")
+    chapters = relationship("Chapter", back_populates="manga_scanlator", cascade="all, delete-orphan")
 
 
 class Chapter(Base):
-    """Chapter model - stores chapter information"""
     __tablename__ = "chapters"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    manga_id = Column(Integer, ForeignKey("mangas.id", ondelete="CASCADE"), nullable=False, index=True)
-    scanlator_id = Column(Integer, ForeignKey("scanlators.id", ondelete="CASCADE"), nullable=False, index=True)
-    chapter_number = Column(String(100), nullable=False)
-    title = Column(String(500), nullable=True)
-    url = Column(Text, nullable=False)
-    release_date = Column(DateTime, nullable=True, index=True)
-    notified = Column(Boolean, default=False, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    manga_scanlator_id = Column(Integer, ForeignKey("manga_scanlator.id", ondelete="CASCADE"), nullable=False)
+    chapter_number = Column(String(20), nullable=False)
+    chapter_title = Column(String(255))
+    chapter_url = Column(String(500), nullable=False)
+    published_date = Column(DateTime)
+    detected_date = Column(DateTime, nullable=False, index=True)
+    read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    manga = relationship("Manga", back_populates="chapters")
-    scanlator = relationship("Scanlator", back_populates="chapters")
-
-    __table_args__ = (
-        UniqueConstraint("manga_id", "scanlator_id", "chapter_number", name="unique_chapter"),
-    )
-
-    def __repr__(self):
-        return f"<Chapter(id={self.id}, manga_id={self.manga_id}, chapter_number='{self.chapter_number}')>"
+    manga_scanlator = relationship("MangaScanlator", back_populates="chapters")
 
 
 class ScrapingError(Base):
-    """ScrapingError model - logs scraping errors for debugging"""
     __tablename__ = "scraping_errors"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    manga_id = Column(Integer, ForeignKey("mangas.id", ondelete="SET NULL"), nullable=True, index=True)
-    scanlator_id = Column(Integer, ForeignKey("scanlators.id", ondelete="SET NULL"), nullable=True, index=True)
-    error_type = Column(String(100), nullable=True, index=True)
-    error_message = Column(Text, nullable=True)
-    url = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-
-    # Relationships
-    manga = relationship("Manga", back_populates="scraping_errors")
-    scanlator = relationship("Scanlator", back_populates="scraping_errors")
-
-    def __repr__(self):
-        return f"<ScrapingError(id={self.id}, error_type='{self.error_type}', created_at='{self.created_at}')>"
+    id = Column(Integer, primary_key=True, index=True)
+    manga_scanlator_id = Column(Integer, ForeignKey("manga_scanlator.id", ondelete="CASCADE"))
+    error_type = Column(String(50))
+    error_message = Column(Text)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    resolved = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
