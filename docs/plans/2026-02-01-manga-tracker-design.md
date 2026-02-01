@@ -318,7 +318,7 @@ Agregadores (ComicK, MangaDex, etc.) se tratan como un `Scanlator` más:
 ```markdown
 # {titulo}
 ## {datos_titulos}
-![Portada](../data/img/{imagen_portada})
+![Portada](../../data/img/{imagen_portada})
 {datos_grupo}
 ```
 

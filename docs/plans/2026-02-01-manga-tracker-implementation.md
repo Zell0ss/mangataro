@@ -429,7 +429,7 @@ def create_markdown_ficha(manga_data: dict, output_dir: str) -> Path:
 
 ## {manga_data.get('alternative_titles', 'N/A')}
 
-![Portada](../data/img/{manga_data.get('cover_filename', 'placeholder.png')})
+![Portada](../../data/img/{manga_data.get('cover_filename', 'placeholder.png')})
 
 **Scanlation Group:** {manga_data.get('scanlator_group', 'Unknown')}
 

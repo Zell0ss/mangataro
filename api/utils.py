@@ -113,7 +113,7 @@ def create_markdown_ficha(
         # Create markdown content
         content = f"""# {title}
 ## {alternative_titles if alternative_titles else "N/A"}
-![Portada](../data/img/{cover_filename})
+![Portada](../../data/img/{cover_filename})
 
 **Scanlation Group:** {scanlator_group if scanlator_group else "Unknown"}
 

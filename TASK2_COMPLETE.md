@@ -53,7 +53,7 @@ Comprehensive guide for running and monitoring the extraction
 
 ### File Management
 - Downloads cover images (skips if already exists)
-- Generates markdown fichas with proper formatting
+- Generates markdown fichas with proper formatting (uses correct relative path `../../data/img/`)
 - Creates directories automatically
 - Handles both .png and .webp image formats
 
