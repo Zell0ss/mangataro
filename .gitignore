@@ -43,7 +43,9 @@ env/
 # Data Files
 *.csv
 *.json
-data/
+data/*
+!data/.gitkeep
+!data/img/.gitkeep
 exports/
 backups/
 
@@ -52,7 +54,13 @@ backups/
 
 # Logs
 *.log
-logs/
+logs/*
+!logs/.gitkeep
+
+# Generated files (will be created by extraction)
+docs/scanlators.md
+docs/fichas/*.md
+!docs/fichas/.gitkeep
 
 # IDE
 .vscode/
@@ -78,3 +86,4 @@ yarn.lock
 # OS
 Thumbs.db
 .DS_Store
+docs/DOCUMENTATION_PROMPT.md

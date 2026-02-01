@@ -1,0 +1,20 @@
+# Scanlators Checklist
+
+This file will be automatically generated after running the MangaTaro extraction script.
+
+Found scanlators from MangaTaro extraction:
+
+(List will be populated after extraction)
+
+**Total scanlators:** 0
+**Generated:** Not yet generated
+
+## How to Generate
+
+Run the extraction script:
+```bash
+source .venv/bin/activate
+python scripts/extract_mangataro.py
+```
+
+This will create `scanlators.md` with a checklist of all unique scanlators found in your MangaTaro bookmarks.

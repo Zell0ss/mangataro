@@ -53,13 +53,13 @@ CREATE TABLE chapters (
     chapter_url VARCHAR(500) NOT NULL,
     published_date DATETIME,
     detected_date DATETIME NOT NULL,
-    read BOOLEAN DEFAULT FALSE,
+    `read` BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (manga_scanlator_id) REFERENCES manga_scanlator(id) ON DELETE CASCADE,
     UNIQUE KEY unique_chapter (manga_scanlator_id, chapter_number),
     INDEX idx_detected (detected_date DESC),
-    INDEX idx_read (read)
+    INDEX idx_read (`read`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE scraping_errors (
