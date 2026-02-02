@@ -1,73 +1,110 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import MangaCard from '../components/MangaCard.astro';
 import { api } from '../lib/api';
 
-const allManga = await api.getAllManga();
+let allManga = [];
+let error = null;
+
+try {
+  allManga = await api.getAllManga();
+} catch (e) {
+  console.error('Failed to fetch manga:', e);
+  error = e.message;
+}
 ---
 
 <Layout title="Library - MangaTaro">
   <div>
-    <!-- Header with Search -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-slate-100">Library</h1>
-      <p class="text-slate-400 mt-2">{allManga.length} manga in your collection</p>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="mb-6" x-data="{ search: '', status: 'all' }">
-      <input
-        type="text"
-        x-model="search"
-        placeholder="Search manga..."
-        class="w-full max-w-md px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
-      />
-
-      <!-- Status Filter Tabs -->
-      <div class="flex gap-2 mt-4">
-        <button
-          @click="status = 'all'"
-          :class="status === 'all' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-          class="px-4 py-2 rounded-md text-sm font-medium transition"
-        >
-          All
-        </button>
-        <button
-          @click="status = 'reading'"
-          :class="status === 'reading' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-          class="px-4 py-2 rounded-md text-sm font-medium transition"
-        >
-          Reading
-        </button>
-        <button
-          @click="status = 'completed'"
-          :class="status === 'completed' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-          class="px-4 py-2 rounded-md text-sm font-medium transition"
-        >
-          Completed
-        </button>
-        <button
-          @click="status = 'on_hold'"
-          :class="status === 'on_hold' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-          class="px-4 py-2 rounded-md text-sm font-medium transition"
-        >
-          On Hold
-        </button>
+    {error ? (
+      <div class="text-center py-16">
+        <p class="text-red-400 text-lg">Failed to load library</p>
+        <p class="text-slate-500 text-sm mt-2">{error}</p>
       </div>
+    ) : (
+      <>
+        <!-- Header with Search -->
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-slate-100">Library</h1>
+          <p class="text-slate-400 mt-2">{allManga.length} manga in your collection</p>
+        </div>
 
-      <!-- Manga Grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
-        {allManga.map((manga) => (
-          <div
-            x-show="
-              (status === 'all' || '{manga.status}' === status) &&
-              (search === '' || '{manga.title}'.toLowerCase().includes(search.toLowerCase()))
-            "
-          >
-            <MangaCard manga={manga} />
+        <!-- Search Bar and Filtering with Alpine.js -->
+        <div class="mb-6" x-data={`{
+          search: '',
+          status: 'all',
+          allManga: ${JSON.stringify(allManga)},
+          get filteredManga() {
+            return this.allManga.filter(m =>
+              (this.status === 'all' || m.status === this.status) &&
+              (this.search === '' || m.title.toLowerCase().includes(this.search.toLowerCase()))
+            );
+          }
+        }`}>
+          <input
+            type="text"
+            x-model="search"
+            placeholder="Search manga..."
+            class="w-full max-w-md px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+          />
+
+          <!-- Status Filter Tabs -->
+          <div class="flex gap-2 mt-4">
+            <button
+              @click="status = 'all'"
+              :class="status === 'all' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+              class="px-4 py-2 rounded-md text-sm font-medium transition"
+            >
+              All
+            </button>
+            <button
+              @click="status = 'reading'"
+              :class="status === 'reading' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+              class="px-4 py-2 rounded-md text-sm font-medium transition"
+            >
+              Reading
+            </button>
+            <button
+              @click="status = 'completed'"
+              :class="status === 'completed' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+              class="px-4 py-2 rounded-md text-sm font-medium transition"
+            >
+              Completed
+            </button>
+            <button
+              @click="status = 'on_hold'"
+              :class="status === 'on_hold' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+              class="px-4 py-2 rounded-md text-sm font-medium transition"
+            >
+              On Hold
+            </button>
           </div>
-        ))}
-      </div>
-    </div>
+
+          <!-- Manga Grid with x-for -->
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
+            <template x-for="manga in filteredManga" :key="manga.id">
+              <div>
+                <a
+                  :href="`/manga/${manga.id}`"
+                  class="block group relative bg-slate-900/50 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition"
+                >
+                  <div class="aspect-[2/3] overflow-hidden bg-slate-800">
+                    <img
+                      :src="manga.cover_filename ? `/data/img/${manga.cover_filename}` : '/placeholder-cover.jpg'"
+                      :alt="manga.title"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="p-3">
+                    <h3 class="font-medium text-slate-100 line-clamp-2 text-sm" x-text="manga.title"></h3>
+                    <p class="text-xs text-slate-500 mt-1 capitalize" x-text="manga.status.replace('_', ' ')"></p>
+                  </div>
+                </a>
+              </div>
+            </template>
+          </div>
+        </div>
+      </>
+    )}
   </div>
 </Layout>

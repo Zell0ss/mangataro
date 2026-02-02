@@ -8,83 +8,110 @@ const { id } = Astro.params;
 if (!id) return Astro.redirect('/library');
 
 const mangaId = parseInt(id);
-const manga = await api.getManga(mangaId);
-const chapters = await api.getMangaChapters(mangaId);
+if (isNaN(mangaId)) {
+  return Astro.redirect('/library');
+}
+
+let manga = null;
+let chapters = [];
+let error = null;
+
+try {
+  manga = await api.getManga(mangaId);
+  chapters = await api.getMangaChapters(mangaId);
+} catch (e) {
+  console.error('Failed to fetch manga:', e);
+  error = e.message;
+}
+
+if (!manga && !error) {
+  return Astro.redirect('/library');
+}
 
 const unreadCount = chapters.filter(c => !c.read).length;
 ---
 
-<Layout title={`${manga.title} - MangaTaro`}>
+<Layout title={manga ? `${manga.title} - MangaTaro` : 'Error - MangaTaro'}>
   <div class="max-w-6xl mx-auto">
-    <!-- Back Button -->
-    <a href="/library" class="inline-flex items-center text-slate-400 hover:text-slate-300 mb-6">
-      ← Back to Library
-    </a>
-
-    <!-- Manga Info -->
-    <div class="grid md:grid-cols-[300px,1fr] gap-8 mb-8">
-      <!-- Cover -->
-      <div>
-        <img
-          src={getCoverUrl(manga.cover_filename)}
-          alt={manga.title}
-          class="w-full rounded-lg shadow-xl"
-        />
+    {error ? (
+      <div class="text-center py-16">
+        <p class="text-red-400 text-lg">Failed to load manga</p>
+        <p class="text-slate-500 text-sm mt-2">{error}</p>
+        <a href="/library" class="text-blue-400 hover:text-blue-300 mt-4 inline-block">← Back to Library</a>
       </div>
+    ) : manga ? (
+      <>
+        <!-- Back Button -->
+        <a href="/library" class="inline-flex items-center text-slate-400 hover:text-slate-300 mb-6">
+          ← Back to Library
+        </a>
 
-      <!-- Details -->
-      <div>
-        <h1 class="text-4xl font-bold text-slate-100 mb-2">{manga.title}</h1>
-        <p class="text-slate-400 capitalize mb-4">{manga.status.replace('_', ' ')}</p>
-
-        {manga.alternative_titles && (
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-slate-400 mb-1">Alternative Titles</h3>
-            <p class="text-sm text-slate-300">{manga.alternative_titles}</p>
+        <!-- Manga Info -->
+        <div class="grid md:grid-cols-[300px,1fr] gap-8 mb-8">
+          <!-- Cover -->
+          <div>
+            <img
+              src={getCoverUrl(manga.cover_filename)}
+              alt={manga.title}
+              class="w-full rounded-lg shadow-xl"
+            />
           </div>
-        )}
 
-        <!-- Tracked Scanlators -->
-        {manga.manga_scanlators.length > 0 && (
-          <div class="mb-4">
-            <h3 class="text-sm font-semibold text-slate-400 mb-2">Tracking On</h3>
-            <div class="flex flex-wrap gap-2">
-              {manga.manga_scanlators.map((ms) => (
-                <span class="px-3 py-1 bg-slate-800 rounded-full text-sm">
-                  {ms.scanlator.name}
-                </span>
-              ))}
+          <!-- Details -->
+          <div>
+            <h1 class="text-4xl font-bold text-slate-100 mb-2">{manga.title}</h1>
+            <p class="text-slate-400 capitalize mb-4">{manga.status.replace('_', ' ')}</p>
+
+            {manga.alternative_titles && (
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-slate-400 mb-1">Alternative Titles</h3>
+                <p class="text-sm text-slate-300">{manga.alternative_titles}</p>
+              </div>
+            )}
+
+            <!-- Tracked Scanlators -->
+            {manga.manga_scanlators.length > 0 && (
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-slate-400 mb-2">Tracking On</h3>
+                <div class="flex flex-wrap gap-2">
+                  {manga.manga_scanlators.map((ms) => (
+                    <span class="px-3 py-1 bg-slate-800 rounded-full text-sm">
+                      {ms.scanlator.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-4 mt-6">
+              <div class="bg-slate-900/50 rounded-lg p-4">
+                <div class="text-2xl font-bold text-blue-400">{chapters.length}</div>
+                <div class="text-sm text-slate-400">Total Chapters</div>
+              </div>
+              <div class="bg-slate-900/50 rounded-lg p-4">
+                <div class="text-2xl font-bold text-red-400">{unreadCount}</div>
+                <div class="text-sm text-slate-400">Unread</div>
+              </div>
             </div>
           </div>
-        )}
-
-        <!-- Stats -->
-        <div class="grid grid-cols-2 gap-4 mt-6">
-          <div class="bg-slate-900/50 rounded-lg p-4">
-            <div class="text-2xl font-bold text-blue-400">{chapters.length}</div>
-            <div class="text-sm text-slate-400">Total Chapters</div>
-          </div>
-          <div class="bg-slate-900/50 rounded-lg p-4">
-            <div class="text-2xl font-bold text-red-400">{unreadCount}</div>
-            <div class="text-sm text-slate-400">Unread</div>
-          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Chapters Section -->
-    <div>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-slate-100">Chapters</h2>
-      </div>
+        <!-- Chapters Section -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-slate-100">Chapters</h2>
+          </div>
 
-      {chapters.length === 0 ? (
-        <div class="text-center py-16 text-slate-400">
-          <p>No chapters tracked yet</p>
+          {chapters.length === 0 ? (
+            <div class="text-center py-16 text-slate-400">
+              <p>No chapters tracked yet</p>
+            </div>
+          ) : (
+            <ChapterList chapters={chapters} />
+          )}
         </div>
-      ) : (
-        <ChapterList chapters={chapters} />
-      )}
-    </div>
+      </>
+    ) : null}
   </div>
 </Layout>
