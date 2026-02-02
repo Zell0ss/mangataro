@@ -26,6 +26,11 @@ export interface Chapter {
       id: number;
       name: string;
     };
+    manga: {
+      id: number;
+      title: string;
+      cover_filename: string | null;
+    };
   };
 }
 

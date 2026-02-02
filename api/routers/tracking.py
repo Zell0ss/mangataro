@@ -21,7 +21,8 @@ async def get_unread_chapters(
     - **limit**: Maximum number of records to return
     """
     chapters = db.query(models.Chapter).options(
-        joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.scanlator)
+        joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.scanlator),
+        joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.manga)
     ).filter(models.Chapter.read == False).order_by(
         models.Chapter.detected_date.desc()
     ).offset(skip).limit(limit).all()
