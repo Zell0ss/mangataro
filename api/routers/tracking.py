@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import cast, Float
 from typing import List, Optional
 from api.dependencies import get_db
 from api import schemas, models
@@ -24,7 +25,8 @@ async def get_unread_chapters(
         joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.scanlator),
         joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.manga)
     ).filter(models.Chapter.read == False).order_by(
-        models.Chapter.detected_date.desc()
+        models.Chapter.detected_date.desc(),
+        cast(models.Chapter.chapter_number, Float).desc()
     ).offset(skip).limit(limit).all()
 
     return chapters

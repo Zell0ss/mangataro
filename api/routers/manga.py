@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import cast, Float
 from typing import List, Optional
 from api.dependencies import get_db
 from api import schemas, models
@@ -181,8 +182,8 @@ async def get_manga_chapters(
     if unread_only:
         query = query.filter(models.Chapter.read == False)
 
-    # Order by detected date (newest first)
-    query = query.order_by(models.Chapter.detected_date.desc())
+    # Order by chapter number (descending, numeric sort)
+    query = query.order_by(cast(models.Chapter.chapter_number, Float).desc())
 
     chapters = query.offset(skip).limit(limit).all()
 
