@@ -7,8 +7,11 @@ interface Props {
 }
 
 const { chapter } = Astro.props;
-const manga = chapter.manga_scanlator;
-const scanlator = manga.scanlator;
+const mangaScanlator = chapter.manga_scanlator;
+const manga = mangaScanlator.manga;
+const scanlator = mangaScanlator.scanlator;
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const markReadUrl = `${API_BASE}/api/tracking/chapters/${chapter.id}/mark-read`;
 ---
 
 <div
@@ -18,9 +21,9 @@ const scanlator = manga.scanlator;
 >
   <!-- Manga Cover -->
   <div class="flex-shrink-0">
-    <a href={`/manga/${manga.manga_id}`}>
+    <a href={`/manga/${manga.id}`}>
       <img
-        src={getCoverUrl(null)}
+        src={getCoverUrl(manga.cover_filename)}
         alt="Cover"
         class="w-16 h-24 object-cover rounded"
         loading="lazy"
@@ -33,10 +36,10 @@ const scanlator = manga.scanlator;
     <div class="flex items-start justify-between gap-4">
       <div class="flex-1 min-w-0">
         <a
-          href={`/manga/${manga.manga_id}`}
+          href={`/manga/${manga.id}`}
           class="text-lg font-semibold text-slate-100 hover:text-blue-400 transition line-clamp-1"
         >
-          {manga.manga_id}
+          {manga.title}
         </a>
         <div class="flex items-center gap-2 mt-1 text-sm text-slate-400">
           <a
@@ -60,11 +63,7 @@ const scanlator = manga.scanlator;
 
       <!-- Mark as Read Button -->
       <button
-        @click="
-          read = true;
-          fetch(`http://localhost:8000/api/tracking/chapters/${chapter.id}/mark-read`, { method: 'PUT' })
-            .catch(err => { console.error(err); read = false; });
-        "
+        @click={`read = true; fetch('${markReadUrl}', { method: 'PUT' }).catch(err => { console.error(err); read = false; });`}
         :disabled="read"
         class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded transition"
       >
