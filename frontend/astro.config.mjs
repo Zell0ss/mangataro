@@ -5,6 +5,6 @@ import alpinejs from '@astrojs/alpinejs';
 export default defineConfig({
   integrations: [tailwind(), alpinejs()],
   server: {
-    port: 4321,
+    port: 4343,
   },
 });
