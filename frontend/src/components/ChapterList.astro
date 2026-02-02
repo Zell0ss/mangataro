@@ -1,0 +1,60 @@
+---
+import type { Chapter } from '../lib/api';
+import { formatTimeAgo } from '../lib/utils';
+
+interface Props {
+  chapters: Chapter[];
+}
+
+const { chapters } = Astro.props;
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+---
+
+<div class="space-y-2" x-data="{ readChapters: new Set() }">
+  {chapters.map((chapter) => (
+    <div
+      class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg hover:bg-slate-800/50 transition"
+      :class=`readChapters.has(${chapter.id}) && 'opacity-50'`
+    >
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-3">
+          <a
+            href={chapter.chapter_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-blue-400 hover:text-blue-300 font-medium"
+          >
+            Ch. {chapter.chapter_number}
+          </a>
+          {chapter.chapter_title && (
+            <span class="text-slate-300 line-clamp-1">
+              {chapter.chapter_title}
+            </span>
+          )}
+        </div>
+        <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
+          <span>{chapter.manga_scanlator.scanlator.name}</span>
+          <span>•</span>
+          <span>{formatTimeAgo(chapter.detected_date)}</span>
+        </div>
+      </div>
+
+      <label class="flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          :checked=`readChapters.has(${chapter.id}) || ${chapter.read}`
+          @change=`
+            if ($event.target.checked) {
+              readChapters.add(${chapter.id});
+              fetch('${API_BASE}/api/tracking/chapters/${chapter.id}/mark-read', { method: 'PUT' });
+            } else {
+              readChapters.delete(${chapter.id});
+              fetch('${API_BASE}/api/tracking/chapters/${chapter.id}/mark-unread', { method: 'PUT' });
+            }
+          `
+          class="w-5 h-5 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-2 focus:ring-blue-500"
+        />
+      </label>
+    </div>
+  ))}
+</div>

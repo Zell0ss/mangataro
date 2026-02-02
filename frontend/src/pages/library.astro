@@ -1,0 +1,73 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MangaCard from '../components/MangaCard.astro';
+import { api } from '../lib/api';
+
+const allManga = await api.getAllManga();
+---
+
+<Layout title="Library - MangaTaro">
+  <div>
+    <!-- Header with Search -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-100">Library</h1>
+      <p class="text-slate-400 mt-2">{allManga.length} manga in your collection</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-6" x-data="{ search: '', status: 'all' }">
+      <input
+        type="text"
+        x-model="search"
+        placeholder="Search manga..."
+        class="w-full max-w-md px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+      />
+
+      <!-- Status Filter Tabs -->
+      <div class="flex gap-2 mt-4">
+        <button
+          @click="status = 'all'"
+          :class="status === 'all' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          All
+        </button>
+        <button
+          @click="status = 'reading'"
+          :class="status === 'reading' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          Reading
+        </button>
+        <button
+          @click="status = 'completed'"
+          :class="status === 'completed' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          Completed
+        </button>
+        <button
+          @click="status = 'on_hold'"
+          :class="status === 'on_hold' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          On Hold
+        </button>
+      </div>
+
+      <!-- Manga Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
+        {allManga.map((manga) => (
+          <div
+            x-show="
+              (status === 'all' || '{manga.status}' === status) &&
+              (search === '' || '{manga.title}'.toLowerCase().includes(search.toLowerCase()))
+            "
+          >
+            <MangaCard manga={manga} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</Layout>

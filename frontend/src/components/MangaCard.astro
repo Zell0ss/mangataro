@@ -1,0 +1,43 @@
+---
+import type { Manga } from '../lib/api';
+import { getCoverUrl } from '../lib/utils';
+
+interface Props {
+  manga: Manga;
+  unreadCount?: number;
+}
+
+const { manga, unreadCount = 0 } = Astro.props;
+---
+
+<a
+  href={`/manga/${manga.id}`}
+  class="block group relative bg-slate-900/50 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition"
+>
+  <!-- Cover Image -->
+  <div class="aspect-[2/3] overflow-hidden bg-slate-800">
+    <img
+      src={getCoverUrl(manga.cover_filename)}
+      alt={manga.title}
+      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+      loading="lazy"
+    />
+  </div>
+
+  <!-- Unread Badge -->
+  {unreadCount > 0 && (
+    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+      {unreadCount}
+    </div>
+  )}
+
+  <!-- Title -->
+  <div class="p-3">
+    <h3 class="font-medium text-slate-100 line-clamp-2 text-sm">
+      {manga.title}
+    </h3>
+    <p class="text-xs text-slate-500 mt-1 capitalize">
+      {manga.status.replace('_', ' ')}
+    </p>
+  </div>
+</a>

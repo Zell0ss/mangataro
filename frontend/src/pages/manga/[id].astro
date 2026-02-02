@@ -1,0 +1,90 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ChapterList from '../../components/ChapterList.astro';
+import { api } from '../../lib/api';
+import { getCoverUrl } from '../../lib/utils';
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/library');
+
+const mangaId = parseInt(id);
+const manga = await api.getManga(mangaId);
+const chapters = await api.getMangaChapters(mangaId);
+
+const unreadCount = chapters.filter(c => !c.read).length;
+---
+
+<Layout title={`${manga.title} - MangaTaro`}>
+  <div class="max-w-6xl mx-auto">
+    <!-- Back Button -->
+    <a href="/library" class="inline-flex items-center text-slate-400 hover:text-slate-300 mb-6">
+      ← Back to Library
+    </a>
+
+    <!-- Manga Info -->
+    <div class="grid md:grid-cols-[300px,1fr] gap-8 mb-8">
+      <!-- Cover -->
+      <div>
+        <img
+          src={getCoverUrl(manga.cover_filename)}
+          alt={manga.title}
+          class="w-full rounded-lg shadow-xl"
+        />
+      </div>
+
+      <!-- Details -->
+      <div>
+        <h1 class="text-4xl font-bold text-slate-100 mb-2">{manga.title}</h1>
+        <p class="text-slate-400 capitalize mb-4">{manga.status.replace('_', ' ')}</p>
+
+        {manga.alternative_titles && (
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-slate-400 mb-1">Alternative Titles</h3>
+            <p class="text-sm text-slate-300">{manga.alternative_titles}</p>
+          </div>
+        )}
+
+        <!-- Tracked Scanlators -->
+        {manga.manga_scanlators.length > 0 && (
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-slate-400 mb-2">Tracking On</h3>
+            <div class="flex flex-wrap gap-2">
+              {manga.manga_scanlators.map((ms) => (
+                <span class="px-3 py-1 bg-slate-800 rounded-full text-sm">
+                  {ms.scanlator.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-4 mt-6">
+          <div class="bg-slate-900/50 rounded-lg p-4">
+            <div class="text-2xl font-bold text-blue-400">{chapters.length}</div>
+            <div class="text-sm text-slate-400">Total Chapters</div>
+          </div>
+          <div class="bg-slate-900/50 rounded-lg p-4">
+            <div class="text-2xl font-bold text-red-400">{unreadCount}</div>
+            <div class="text-sm text-slate-400">Unread</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapters Section -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-slate-100">Chapters</h2>
+      </div>
+
+      {chapters.length === 0 ? (
+        <div class="text-center py-16 text-slate-400">
+          <p>No chapters tracked yet</p>
+        </div>
+      ) : (
+        <ChapterList chapters={chapters} />
+      )}
+    </div>
+  </div>
+</Layout>
