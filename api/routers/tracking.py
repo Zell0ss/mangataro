@@ -207,3 +207,91 @@ async def delete_manga_scanlator(manga_scanlator_id: int, db: Session = Depends(
     db.commit()
 
     return None
+
+
+from api.services.tracker_service import get_tracker_service
+from api.services.notification_service import get_notification_service
+
+
+@router.post("/trigger", response_model=schemas.TrackingJobSummary, status_code=202)
+async def trigger_tracking(request: schemas.TrackingJobTrigger):
+    """
+    Trigger a chapter tracking job.
+
+    - **manga_id**: Optional manga ID to track (tracks all if not specified)
+    - **scanlator_id**: Optional scanlator ID to track (tracks all if not specified)
+    - **notify**: Whether to send notifications for new chapters (default: true)
+
+    Returns a job ID that can be used to monitor the tracking progress.
+    """
+    tracker_service = get_tracker_service()
+
+    job_id = await tracker_service.trigger_tracking(
+        manga_id=request.manga_id,
+        scanlator_id=request.scanlator_id,
+        notify=request.notify
+    )
+
+    return {
+        "job_id": job_id,
+        "status": "pending",
+        "started_at": None,
+        "new_chapters_found": 0
+    }
+
+
+@router.get("/jobs/{job_id}", response_model=schemas.TrackingJobStatus)
+async def get_job_status(job_id: str):
+    """
+    Get the status of a tracking job.
+
+    - **job_id**: The ID of the tracking job
+    """
+    tracker_service = get_tracker_service()
+
+    status = await tracker_service.get_job_status(job_id)
+
+    if not status:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    return status
+
+
+@router.get("/jobs", response_model=List[schemas.TrackingJobSummary])
+async def list_jobs(limit: int = Query(20, ge=1, le=100)):
+    """
+    List recent tracking jobs.
+
+    - **limit**: Maximum number of jobs to return (default: 20)
+    """
+    tracker_service = get_tracker_service()
+
+    jobs = await tracker_service.list_jobs(limit=limit)
+
+    return jobs
+
+
+@router.post("/test-notification", status_code=200)
+async def test_notification():
+    """
+    Send a test notification to verify webhook configuration.
+    """
+    notification_service = get_notification_service()
+
+    test_chapters = [
+        {
+            "manga_title": "Test Manga",
+            "chapter_number": "123",
+            "title": "Test Chapter",
+            "url": "https://example.com/test",
+            "scanlator_name": "Test Scanlator",
+            "detected_date": datetime.utcnow()
+        }
+    ]
+
+    success = await notification_service.notify_new_chapters(test_chapters)
+
+    if success:
+        return {"message": "Test notification sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send test notification")
