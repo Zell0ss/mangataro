@@ -203,3 +203,31 @@ class PaginatedResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+# Tracking job schemas
+class TrackingJobTrigger(BaseModel):
+    """Request to trigger a tracking job."""
+    manga_id: Optional[int] = None
+    scanlator_id: Optional[int] = None
+    notify: bool = True
+
+
+class TrackingJobStatus(BaseModel):
+    """Status of a tracking job."""
+    job_id: str
+    status: str  # pending, running, completed, failed
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    total_mappings: int
+    processed_mappings: int
+    new_chapters_found: int
+    errors: List[str]
+
+
+class TrackingJobSummary(BaseModel):
+    """Summary of a tracking job."""
+    job_id: str
+    status: str
+    started_at: Optional[str] = None
+    new_chapters_found: int
