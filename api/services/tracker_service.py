@@ -189,30 +189,32 @@ class TrackerService:
         if not plugin_class:
             raise ValueError(f"No plugin found for {scanlator.name}")
 
-        plugin = plugin_class()
         page = await browser.new_page()
+        plugin = plugin_class(page)
 
         try:
-            # Fetch chapters
-            chapters = await plugin.get_chapters(page, mapping.scanlator_manga_url)
+            # Fetch chapters using the correct Spanish method name
+            chapters = await plugin.obtener_capitulos(mapping.scanlator_manga_url)
 
             # Insert new chapters
             for chapter_data in chapters:
+                # Map Spanish field names to English for database
+                # Plugin returns: numero, titulo, url, fecha
                 # Check if chapter already exists
                 existing = db.query(Chapter).filter(
                     and_(
                         Chapter.manga_scanlator_id == mapping.id,
-                        Chapter.chapter_number == chapter_data["chapter_number"]
+                        Chapter.chapter_number == chapter_data["numero"]
                     )
                 ).first()
 
                 if not existing:
                     chapter = Chapter(
                         manga_scanlator_id=mapping.id,
-                        chapter_number=chapter_data["chapter_number"],
-                        title=chapter_data.get("title"),
+                        chapter_number=chapter_data["numero"],
+                        title=chapter_data.get("titulo"),
                         url=chapter_data["url"],
-                        release_date=chapter_data.get("release_date"),
+                        release_date=chapter_data.get("fecha"),
                         detected_date=datetime.utcnow(),
                         read=False
                     )
@@ -222,14 +224,14 @@ class TrackerService:
                     job.new_chapters_found += 1
                     job.chapters_data.append({
                         "manga_title": manga.title,
-                        "chapter_number": chapter_data["chapter_number"],
-                        "title": chapter_data.get("title"),
+                        "chapter_number": chapter_data["numero"],
+                        "title": chapter_data.get("titulo"),
                         "url": chapter_data["url"],
                         "scanlator_name": scanlator.name,
                         "detected_date": datetime.utcnow()
                     })
 
-                    logger.info(f"New chapter: {manga.title} #{chapter_data['chapter_number']}")
+                    logger.info(f"New chapter: {manga.title} #{chapter_data['numero']}")
 
         finally:
             await page.close()
