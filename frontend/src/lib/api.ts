@@ -44,6 +44,19 @@ export interface MangaWithScanlators extends Manga {
   }>;
 }
 
+export interface UnmappedMangaResponse {
+  scanlator_id: number;
+  scanlator_name: string;
+  base_url: string | null;
+  unmapped_manga: Array<{
+    id: number;
+    title: string;
+    cover_filename: string | null;
+    status: string;
+  }>;
+  count: number;
+}
+
 export const api = {
   async getUnreadChapters(limit = 50): Promise<Chapter[]> {
     const response = await fetch(`${API_BASE}/api/tracking/chapters/unread?limit=${limit}`);
@@ -81,5 +94,11 @@ export const api = {
       method: 'PUT',
     });
     if (!response.ok) throw new Error('Failed to mark chapter as unread');
+  },
+
+  async getUnmappedManga(scanlatorId: number): Promise<UnmappedMangaResponse> {
+    const response = await fetch(`${API_BASE}/api/manga/unmapped?scanlator_id=${scanlatorId}`);
+    if (!response.ok) throw new Error('Failed to fetch unmapped manga');
+    return response.json();
   },
 };
