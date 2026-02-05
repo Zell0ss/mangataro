@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
 
 export interface Manga {
   id: number;

@@ -148,7 +148,7 @@ try {
                     this.error = '';
 
                     try {
-                      const response = await fetch('${import.meta.env.PUBLIC_API_URL || 'http://localhost:8000'}/api/tracking/manga-scanlators', {
+                      const response = await fetch('${import.meta.env.PUBLIC_API_URL || 'http://localhost:8008'}/api/tracking/manga-scanlators', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
