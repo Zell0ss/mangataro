@@ -54,7 +54,7 @@ async def list_manga(
 
 @router.get("/unmapped", response_model=schemas.UnmappedMangaResponse)
 async def get_unmapped_manga(
-    scanlator_id: int = Query(..., description="The scanlator ID to check against"),
+    scanlator_id: Optional[int] = Query(None, description="The scanlator ID to check against"),
     db: Session = Depends(get_db)
 ):
     """
@@ -65,6 +65,14 @@ async def get_unmapped_manga(
 
     - **scanlator_id**: The scanlator ID to check against (required)
     """
+    # Validate scanlator_id is provided
+    if scanlator_id is None:
+        raise HTTPException(status_code=400, detail="scanlator_id query parameter is required")
+
+    # Validate scanlator_id is valid integer
+    if scanlator_id <= 0:
+        raise HTTPException(status_code=400, detail="scanlator_id must be a positive integer")
+
     # Verify scanlator exists
     scanlator = db.query(models.Scanlator).filter(models.Scanlator.id == scanlator_id).first()
     if not scanlator:
