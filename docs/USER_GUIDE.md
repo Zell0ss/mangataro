@@ -84,7 +84,29 @@ Complete guide to using the MangaTaro manga tracking system.
 
 To track chapters for a manga, you need to map it to a scanlator URL.
 
-**Using CLI Tool:**
+**Using Web UI (Recommended):**
+
+1. Navigate to **Admin → Map Sources** in the navigation menu
+2. Select a scanlator from the dropdown (defaults to AsuraScans)
+3. See the list of unmapped manga for that scanlator
+4. For each manga:
+   - Enter the manga's URL on the scanlator's website
+   - URL is validated automatically (must match scanlator domain)
+   - Click "Add" to create the mapping
+   - Row fades out when successful
+5. Switch scanlators using the dropdown to map manga from other sources
+6. When all manga are mapped, you'll see a success message
+
+**URL:** http://localhost:4343/admin/map-sources
+
+**Features:**
+- Real-time URL validation (format and domain checking)
+- Inline error messages for invalid URLs
+- Automatic row removal on successful mapping
+- Counter showing remaining unmapped manga
+- Empty state when all manga are mapped
+
+**Using CLI Tool (Alternative):**
 
 ```bash
 python scripts/add_manga_source.py
@@ -96,7 +118,7 @@ Follow the interactive prompts:
 3. Enter the manga URL on the scanlator site
 4. Verify the mapping
 
-**Using API:**
+**Using API (Programmatic):**
 
 ```bash
 curl -X POST http://localhost:8008/api/tracking/manga-scanlators \

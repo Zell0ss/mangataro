@@ -184,10 +184,10 @@ class TrackerService:
 
         logger.info(f"Tracking {manga.title} on {scanlator.name}")
 
-        # Get scanlator plugin
-        plugin_class = get_scanlator_by_name(scanlator.name)
+        # Get scanlator plugin using class_name (not display name)
+        plugin_class = get_scanlator_by_name(scanlator.class_name)
         if not plugin_class:
-            raise ValueError(f"No plugin found for {scanlator.name}")
+            raise ValueError(f"No plugin found for class_name: {scanlator.class_name}")
 
         page = await browser.new_page()
         plugin = plugin_class(page)
@@ -212,9 +212,9 @@ class TrackerService:
                     chapter = Chapter(
                         manga_scanlator_id=mapping.id,
                         chapter_number=chapter_data["numero"],
-                        title=chapter_data.get("titulo"),
-                        url=chapter_data["url"],
-                        release_date=chapter_data.get("fecha"),
+                        chapter_title=chapter_data.get("titulo"),
+                        chapter_url=chapter_data["url"],
+                        published_date=chapter_data.get("fecha"),
                         detected_date=datetime.utcnow(),
                         read=False
                     )

@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { chapters } = Astro.props;
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
 ---
 
 <div class="space-y-2" x-data="{ readChapters: new Set() }">

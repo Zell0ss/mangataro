@@ -7,6 +7,7 @@ Track manga chapters across multiple scanlation groups after MangaTaro shutdown.
 - 📚 Import manga collection from MangaTaro
 - 🔍 Automatic chapter tracking via scanlator plugins
 - 🌐 Modern web interface with Astro + TailwindCSS
+- 🛠️ Web-based admin UI for mapping manga to scanlators
 - 🔔 Discord notifications for new chapters
 - 📊 REST API with OpenAPI documentation
 - ⚡ Automated tracking via cron/n8n

@@ -11,5 +11,6 @@ export default defineConfig({
   }),
   server: {
     port: 4343,
+    allowedHosts: ['seb01'],
   },
 });

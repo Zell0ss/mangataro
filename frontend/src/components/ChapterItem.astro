@@ -10,7 +10,7 @@ const { chapter } = Astro.props;
 const mangaScanlator = chapter.manga_scanlator;
 const manga = mangaScanlator.manga;
 const scanlator = mangaScanlator.scanlator;
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
 const markReadUrl = `${API_BASE}/api/tracking/chapters/${chapter.id}/mark-read`;
 ---
 
