@@ -44,6 +44,16 @@ export interface MangaWithScanlators extends Manga {
   }>;
 }
 
+export interface Scanlator {
+  id: number;
+  name: string;
+  class_name: string;
+  base_url: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UnmappedMangaResponse {
   scanlator_id: number;
   scanlator_name: string;
@@ -55,6 +65,14 @@ export interface UnmappedMangaResponse {
     status: string;
   }>;
   count: number;
+}
+
+export interface CreateMangaScanlatorRequest {
+  manga_id: number;
+  scanlator_id: number;
+  scanlator_manga_url: string;
+  manually_verified: boolean;
+  notes?: string;
 }
 
 export const api = {
@@ -100,5 +118,25 @@ export const api = {
     const response = await fetch(`${API_BASE}/api/manga/unmapped?scanlator_id=${scanlatorId}`);
     if (!response.ok) throw new Error('Failed to fetch unmapped manga');
     return response.json();
+  },
+
+  async getScanlators(): Promise<Scanlator[]> {
+    const response = await fetch(`${API_BASE}/api/scanlators?active_only=true`);
+    if (!response.ok) throw new Error('Failed to fetch scanlators');
+    return response.json();
+  },
+
+  async createMangaScanlator(data: CreateMangaScanlatorRequest): Promise<void> {
+    const response = await fetch(`${API_BASE}/api/tracking/manga-scanlators`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to create manga-scanlator mapping');
+    }
   },
 };

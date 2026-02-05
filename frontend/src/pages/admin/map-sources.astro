@@ -1,0 +1,239 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+import { getCoverUrl } from '../../lib/utils';
+
+// Get scanlator_id from query param (optional)
+const scanlatorIdParam = Astro.url.searchParams.get('scanlator');
+
+let scanlators = [];
+let selectedScanlator = null;
+let unmappedData = null;
+let error = null;
+
+try {
+  // Fetch all active scanlators
+  scanlators = await api.getScanlators();
+
+  if (scanlators.length === 0) {
+    error = 'No active scanlators found. Please add a scanlator first.';
+  } else {
+    // Determine which scanlator to select
+    if (scanlatorIdParam) {
+      // Try to use the one from query param
+      const requestedId = parseInt(scanlatorIdParam);
+      selectedScanlator = scanlators.find(s => s.id === requestedId);
+    }
+
+    // Default to AsuraScans or first scanlator if not found
+    if (!selectedScanlator) {
+      selectedScanlator = scanlators.find(s => s.name === 'AsuraScans') || scanlators[0];
+    }
+
+    // Fetch unmapped manga for selected scanlator
+    if (selectedScanlator) {
+      unmappedData = await api.getUnmappedManga(selectedScanlator.id);
+    }
+  }
+} catch (e) {
+  console.error('Failed to load data:', e);
+  error = e.message;
+}
+---
+
+<Layout title="Map Manga Sources - MangaTaro">
+  <div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <a href="/library" class="inline-flex items-center text-slate-400 hover:text-slate-300 mb-6">
+      ← Back to Library
+    </a>
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-100">Map Manga Sources</h1>
+      <p class="text-slate-400 mt-2">Add tracking URLs for manga from different scanlators</p>
+    </div>
+
+    {error ? (
+      <div class="text-center py-16">
+        <p class="text-red-400 text-lg">{error}</p>
+      </div>
+    ) : (
+      <>
+        <!-- Scanlator Dropdown -->
+        <div class="mb-6">
+          <label for="scanlator-select" class="block text-sm font-medium text-slate-300 mb-2">
+            Select Scanlator
+          </label>
+          <select
+            id="scanlator-select"
+            class="w-full max-w-md px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+            onchange="window.location.href = `/admin/map-sources?scanlator=${this.value}`"
+          >
+            {scanlators.map((scanlator) => (
+              <option
+                value={scanlator.id}
+                selected={selectedScanlator && scanlator.id === selectedScanlator.id}
+              >
+                {scanlator.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Counter */}
+        {unmappedData && unmappedData.count > 0 && (
+          <div class="mb-4">
+            <p class="text-slate-400">
+              <span class="font-semibold text-blue-400">{unmappedData.count}</span> manga need mapping
+            </p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {unmappedData && unmappedData.count === 0 ? (
+          <div class="text-center py-16 bg-slate-900/50 rounded-lg">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold text-slate-100 mb-2">All Done!</h2>
+            <p class="text-slate-400">
+              All manga are mapped to {unmappedData.scanlator_name}
+            </p>
+          </div>
+        ) : unmappedData && (
+          /* Manga Rows */
+          <div class="space-y-4">
+            {unmappedData.unmapped_manga.map((manga) => (
+              <div
+                x-data={`{
+                  url: '',
+                  error: '',
+                  isSubmitting: false,
+                  isValid: false,
+                  validateUrl() {
+                    this.error = '';
+                    if (!this.url) {
+                      this.isValid = false;
+                      return;
+                    }
+
+                    // Check if URL is valid HTTP/HTTPS
+                    try {
+                      const urlObj = new URL(this.url);
+                      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                        this.error = 'URL must start with http:// or https://';
+                        this.isValid = false;
+                        return;
+                      }
+                    } catch (e) {
+                      this.error = 'Invalid URL format';
+                      this.isValid = false;
+                      return;
+                    }
+
+                    // Check if URL matches scanlator base_url
+                    const baseUrl = '${unmappedData.base_url || ''}';
+                    if (baseUrl && !this.url.includes(baseUrl.replace('https://', '').replace('http://', ''))) {
+                      const domain = baseUrl.replace('https://', '').replace('http://', '').replace(/\\/$/, '');
+                      this.error = \`URL must be from \${domain}\`;
+                      this.isValid = false;
+                      return;
+                    }
+
+                    this.isValid = true;
+                  },
+                  async addMapping() {
+                    if (!this.isValid || this.isSubmitting) return;
+
+                    this.isSubmitting = true;
+                    this.error = '';
+
+                    try {
+                      const response = await fetch('${import.meta.env.PUBLIC_API_URL || 'http://localhost:8000'}/api/tracking/manga-scanlators', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          manga_id: ${manga.id},
+                          scanlator_id: ${selectedScanlator.id},
+                          scanlator_manga_url: this.url,
+                          manually_verified: true,
+                        }),
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to add mapping');
+                      }
+
+                      // Success - fade out and remove
+                      const row = this.$el;
+                      row.style.transition = 'opacity 0.3s ease-out';
+                      row.style.opacity = '0';
+                      setTimeout(() => {
+                        row.remove();
+
+                        // Check if all rows are gone (need to reload to show empty state)
+                        const remainingRows = document.querySelectorAll('[data-manga-row]');
+                        if (remainingRows.length === 0) {
+                          window.location.reload();
+                        }
+                      }, 300);
+                    } catch (e) {
+                      this.error = e.message;
+                      this.isSubmitting = false;
+                    }
+                  }
+                }`}
+                data-manga-row
+                class="bg-slate-900/50 rounded-lg p-4 border border-slate-800 hover:border-slate-700 transition"
+              >
+                <div class="flex items-start gap-4">
+                  <!-- Cover Thumbnail -->
+                  <img
+                    src={getCoverUrl(manga.cover_filename)}
+                    alt={manga.title}
+                    class="w-12 h-18 object-cover rounded flex-shrink-0"
+                  />
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <!-- Title -->
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">
+                      {manga.title}
+                    </h3>
+
+                    <!-- URL Input and Button -->
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        x-model="url"
+                        @blur="validateUrl()"
+                        placeholder={`Enter ${selectedScanlator.name} URL for this manga`}
+                        class="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 text-sm"
+                      />
+                      <button
+                        @click="addMapping()"
+                        :disabled="!isValid || isSubmitting"
+                        :class="{ 'opacity-50 cursor-not-allowed': !isValid || isSubmitting }"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition"
+                      >
+                        <span x-show="!isSubmitting">Add</span>
+                        <span x-show="isSubmitting">Adding...</span>
+                      </button>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div x-show="error" class="mt-2 text-red-400 text-sm">
+                      <span x-text="error"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</Layout>
