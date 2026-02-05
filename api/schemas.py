@@ -231,3 +231,24 @@ class TrackingJobSummary(BaseModel):
     status: str
     started_at: Optional[str] = None
     new_chapters_found: int
+
+
+# Unmapped manga schemas
+class UnmappedMangaItem(BaseModel):
+    """Individual manga item in unmapped response"""
+    id: int
+    title: str
+    cover_filename: Optional[str] = None
+    status: MangaStatus
+
+    class Config:
+        from_attributes = True
+
+
+class UnmappedMangaResponse(BaseModel):
+    """Response for unmapped manga endpoint"""
+    scanlator_id: int
+    scanlator_name: str
+    base_url: Optional[str] = None
+    unmapped_manga: List[UnmappedMangaItem]
+    count: int

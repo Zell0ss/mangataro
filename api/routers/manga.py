@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import cast, Float
+from sqlalchemy import cast, Float, and_
 from typing import List, Optional
 from api.dependencies import get_db
 from api import schemas, models
@@ -50,6 +50,53 @@ async def list_manga(
     manga = query.offset(skip).limit(limit).all()
 
     return manga
+
+
+@router.get("/unmapped", response_model=schemas.UnmappedMangaResponse)
+async def get_unmapped_manga(
+    scanlator_id: int = Query(..., description="The scanlator ID to check against"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all manga that do NOT have a verified mapping to the specified scanlator.
+
+    Returns manga that are not in the manga_scanlator table with manually_verified=1
+    for the given scanlator_id, ordered by title.
+
+    - **scanlator_id**: The scanlator ID to check against (required)
+    """
+    # Verify scanlator exists
+    scanlator = db.query(models.Scanlator).filter(models.Scanlator.id == scanlator_id).first()
+    if not scanlator:
+        raise HTTPException(status_code=404, detail=f"Scanlator with ID {scanlator_id} not found")
+
+    # Get all manga IDs that have verified mappings to this scanlator
+    verified_manga_ids = db.query(models.MangaScanlator.manga_id).filter(
+        and_(
+            models.MangaScanlator.scanlator_id == scanlator_id,
+            models.MangaScanlator.manually_verified == True
+        )
+    ).all()
+
+    # Extract IDs from query result
+    verified_ids = [manga_id[0] for manga_id in verified_manga_ids]
+
+    # Query manga NOT in the verified list
+    query = db.query(models.Manga)
+    if verified_ids:
+        query = query.filter(models.Manga.id.notin_(verified_ids))
+
+    # Order by title
+    unmapped_manga = query.order_by(models.Manga.title).all()
+
+    # Build response
+    return {
+        "scanlator_id": scanlator.id,
+        "scanlator_name": scanlator.name,
+        "base_url": scanlator.base_url,
+        "unmapped_manga": unmapped_manga,
+        "count": len(unmapped_manga)
+    }
 
 
 @router.get("/{manga_id}", response_model=schemas.MangaWithScanlators)
