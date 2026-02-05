@@ -4,21 +4,7 @@ This directory contains n8n workflows for automating MangaTaro chapter tracking 
 
 ## Installation
 
-### Option 1: Docker (Recommended)
-
-```bash
-docker run -d --name n8n \
-  -p 5678:5678 \
-  -v ~/.n8n:/home/node/.n8n \
-  docker.n8n.io/n8nio/n8n
-```
-
-### Option 2: npm
-
-```bash
-npm install -g n8n
-n8n start
-```
+N8n is installed via a dockerfile in the `/data/n8n` directory.
 
 Access n8n at: http://localhost:5678
 

@@ -1,0 +1,136 @@
+{
+  "name": "MangaTaro - Scheduled Chapter Tracking (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9,21 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8008/api/tracking/trigger",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "notify",
+              "value": "=true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Trigger Tracking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "webhookId": "wait-for-tracking"
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:8008/api/tracking/jobs/{{ $json.job_id }}",
+        "options": {}
+      },
+      "name": "Check Job Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "job-complete-condition",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Job Complete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "name": "Wait 10s More",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [850, 450],
+      "webhookId": "wait-retry"
+    },
+    {
+      "parameters": {
+        "message": "=Tracking completed!\nNew chapters: {{ $json.new_chapters_found }}\nProcessed: {{ $json.processed_mappings }}/{{ $json.total_mappings }}",
+        "additionalFields": {}
+      },
+      "name": "Log Results",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Trigger Tracking", "type": "main", "index": 0}]]
+    },
+    "Trigger Tracking": {
+      "main": [[{"node": "Wait 30s", "type": "main", "index": 0}]]
+    },
+    "Wait 30s": {
+      "main": [[{"node": "Check Job Status", "type": "main", "index": 0}]]
+    },
+    "Check Job Status": {
+      "main": [[{"node": "Job Complete?", "type": "main", "index": 0}]]
+    },
+    "Job Complete?": {
+      "main": [
+        [{"node": "Log Results", "type": "main", "index": 0}],
+        [{"node": "Wait 10s More", "type": "main", "index": 0}]
+      ]
+    },
+    "Wait 10s More": {
+      "main": [[{"node": "Check Job Status", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

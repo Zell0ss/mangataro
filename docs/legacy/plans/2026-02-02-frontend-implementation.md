@@ -55,7 +55,7 @@ import alpinejs from '@astrojs/alpinejs';
 export default defineConfig({
   integrations: [tailwind(), alpinejs()],
   server: {
-    port: 4321,
+    port: 4343,
   },
 });
 ```
@@ -80,7 +80,7 @@ export default {
 Create `frontend/src/lib/api.ts`:
 
 ```typescript
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
 
 export interface Manga {
   id: number;
@@ -220,7 +220,7 @@ const { title } = Astro.props;
 Create `frontend/.env`:
 
 ```
-PUBLIC_API_URL=http://localhost:8000
+PUBLIC_API_URL=http://localhost:8008
 ```
 
 ### Step 8: Test dev server
@@ -230,7 +230,7 @@ cd frontend
 npm run dev
 ```
 
-Expected: Server starts at http://localhost:4321 with default Astro page
+Expected: Server starts at http://localhost:4343 with default Astro page
 
 ### Step 9: Commit setup
 
@@ -242,7 +242,7 @@ git commit -m "feat: initialize Astro frontend with TailwindCSS
 - Configure TailwindCSS and Alpine.js
 - Create base layout with navigation
 - Add API client utilities
-- Configure dev server on port 4321"
+- Configure dev server on port 4343"
 ```
 
 ---
@@ -360,7 +360,7 @@ const scanlator = manga.scanlator;
       <button
         @click="
           read = true;
-          fetch(`http://localhost:8000/api/tracking/chapters/${chapter.id}/mark-read`, { method: 'PUT' })
+          fetch(`http://localhost:8008/api/tracking/chapters/${chapter.id}/mark-read`, { method: 'PUT' })
             .catch(err => { console.error(err); read = false; });
         "
         :disabled="read"
@@ -419,7 +419,7 @@ cd frontend
 npm run dev
 ```
 
-Visit http://localhost:4321 and verify:
+Visit http://localhost:4343 and verify:
 - Unread chapters display correctly
 - "Mark as read" button works
 - Links to chapters open in new tabs
@@ -631,10 +631,10 @@ const { chapters } = Astro.props;
           @change=`
             if ($event.target.checked) {
               readChapters.add(${chapter.id});
-              fetch('http://localhost:8000/api/tracking/chapters/${chapter.id}/mark-read', { method: 'PUT' });
+              fetch('http://localhost:8008/api/tracking/chapters/${chapter.id}/mark-read', { method: 'PUT' });
             } else {
               readChapters.delete(${chapter.id});
-              fetch('http://localhost:8000/api/tracking/chapters/${chapter.id}/mark-unread', { method: 'PUT' });
+              fetch('http://localhost:8008/api/tracking/chapters/${chapter.id}/mark-unread', { method: 'PUT' });
             }
           `
           class="w-5 h-5 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-2 focus:ring-blue-500"
@@ -798,7 +798,7 @@ Expected: Clean build with no errors
 npm run preview
 ```
 
-Visit http://localhost:4321 and test all functionality
+Visit http://localhost:4343 and test all functionality
 
 ### Step 3: Update TOMORROW.md
 
@@ -818,8 +818,8 @@ Tasks 10-12 complete:
 - Mark as read/unread functionality
 - Responsive design for mobile/tablet/desktop
 
-Frontend running on http://localhost:4321
-API backend on http://localhost:8000"
+Frontend running on http://localhost:4343
+API backend on http://localhost:8008"
 ```
 
 ---
@@ -848,8 +848,8 @@ API backend on http://localhost:8000"
 
 ## Notes
 
-- Frontend runs on port 4321 (Astro default)
-- API must be running on port 8000
+- Frontend runs on port 4343 (Astro default)
+- API must be running on port 8008
 - Images served from `/data/img/` directory
 - Alpine.js provides interactivity without heavy JavaScript
 - Static generation possible for production deployment

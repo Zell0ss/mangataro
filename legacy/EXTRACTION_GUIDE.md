@@ -1,7 +1,7 @@
 # MangaTaro Extraction Guide
 
 ## Overview
-This guide explains how to run the MangaTaro extractor script to process all 94 bookmarks from the export file.
+This guide explains how to run the MangaTaro extractor script to process all  bookmarks from the mangataro json export file. The exrtactor will retrieve additional info from manga pages and insert them into the database. It will also generate markdown fichas for each manga and create a scanlators checklist.
 
 ## Test Run (Completed)
 The test run on the first manga was successful:
@@ -25,7 +25,7 @@ The test run on the first manga was successful:
 source .venv/bin/activate
 
 # Run the full extraction
-python scripts/extract_mangataro.py
+python legacy/scripts/extract_mangataro.py
 ```
 
 ### What the Script Does

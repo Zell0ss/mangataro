@@ -118,7 +118,7 @@ DB_PASSWORD=your_password_here
 
 # API
 API_HOST=0.0.0.0
-API_PORT=8000
+API_PORT=8008
 API_DEBUG=false
 
 # Scraping
@@ -1530,7 +1530,7 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api.main:app", host="0.0.0.0", port=8008, reload=True)
 ```
 
 **Step 4: Test API**
@@ -1540,7 +1540,7 @@ Run:
 python -m api.main
 ```
 
-Visit: http://localhost:8000/docs
+Visit: http://localhost:8008/docs
 
 Expected: Swagger UI with basic endpoints.
 
@@ -1838,7 +1838,7 @@ Run:
 python -m api.main
 ```
 
-Visit http://localhost:8000/docs and test each endpoint.
+Visit http://localhost:8008/docs and test each endpoint.
 
 **Step 5: Commit**
 
@@ -1995,7 +1995,7 @@ async def check_updates_single(manga_id: int):
 
 **Step 3: Test endpoint**
 
-Run API, visit http://localhost:8000/docs
+Run API, visit http://localhost:8008/docs
 
 POST to `/api/check-updates`
 
@@ -2041,12 +2041,12 @@ npx astro add tailwind
 Create `frontend/src/config.ts`:
 
 ```typescript
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
 ```
 
 Add to `frontend/.env`:
 ```
-PUBLIC_API_URL=http://localhost:8000
+PUBLIC_API_URL=http://localhost:8008
 ```
 
 **Step 4: Create base layout**
@@ -2098,7 +2098,7 @@ Run:
 npm run dev
 ```
 
-Visit: http://localhost:4321
+Visit: http://localhost:4343
 
 **Step 6: Commit**
 
@@ -2212,7 +2212,7 @@ cd frontend
 npm run dev
 ```
 
-Visit: http://localhost:4321
+Visit: http://localhost:4343
 
 Expected: Grid of manga covers.
 
@@ -2440,7 +2440,7 @@ Create `n8n/workflows/check-updates.json`:
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:8000/api/check-updates",
+        "url": "http://localhost:8008/api/check-updates",
         "options": {}
       },
       "name": "Check Updates API",
@@ -2668,7 +2668,7 @@ mangataro/
 - `POST /api/check-updates` - Trigger update check
 - `PUT /api/mangas/{id}/read-until` - Binge reading
 
-See http://localhost:8000/docs for full API documentation.
+See http://localhost:8008/docs for full API documentation.
 
 ## Contributing
 

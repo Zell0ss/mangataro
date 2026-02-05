@@ -34,10 +34,39 @@ cd frontend && npm run dev
 
 ## Documentation
 
+### 📚 For Users
+
+**Getting Started:**
 - **[Setup Guide](docs/SETUP.md)** - Installation and configuration
-- **[User Guide](docs/USER_GUIDE.md)** - How to use the system
-- **[API Guide](docs/api_guide.md)** - API documentation
+- **[Quick Start](QUICK_START.md)** - Task-by-task setup walkthrough
+- **[User Guide](docs/USER_GUIDE.md)** - How to use the web interface
+
+**Operation:**
+- **[Tracking Guide](docs/TRACKING_GUIDE.md)** - Complete chapter tracking guide
+- **[Quick Start Tracking](docs/TRACKING_QUICK_START.md)** - 5-minute tracking setup
+- **[Service Management](docs/SERVICE_MANAGEMENT.md)** - Systemd service commands
+- **[Automation Setup](n8n/README.md)** - n8n workflow configuration
+
+**Reference:**
+- **[API Guide](docs/API_GUIDE.md)** - REST API documentation
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment
+- **[Project Status](TOMORROW.md)** - Current status (14/14 tasks complete)
+
+### 🛠️ For Developers
+
+**Start Here:**
+- **[CLAUDE.md](CLAUDE.md)** - **Primary developer guide** (architecture, critical info, workflows)
+
+**Plugin Development:**
+- **[AsuraScans Plugin Guide](ASURASCANS_PLUGIN_USAGE.md)** - Example plugin usage
+- **[Scanlator Quick Reference](SCANLATOR_QUICK_REFERENCE.md)** - Create new plugins
+
+**Architecture:**
+- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Directory organization
+- **[Scanlators List](docs/SCANLATORS.md)** - Reference list from MangaTaro
+
+**Historical:**
+- **[Legacy Documentation](docs/legacy/)** - Archived docs, test results, implementation plans
 
 ## Architecture
 

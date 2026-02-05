@@ -5,6 +5,7 @@ Production deployment instructions for MangaTaro.
 ## Systemd Services
 
 ### API Service
+FASTAPI api that is run with gunicorn on port 8008 
 
 **File:** `/etc/systemd/system/mangataro-api.service`
 
@@ -36,6 +37,7 @@ sudo systemctl status mangataro-api
 ```
 
 ### Frontend Service
+Is an Astro site that is run with npm run dev on port 4343
 
 **File:** `/etc/systemd/system/mangataro-frontend.service`
 
@@ -68,6 +70,11 @@ Or serve with nginx (see below).
 ---
 
 ## Nginx Reverse Proxy
+You can serve the frontend and API with nginx, all in port 80. 
+- / will go to the frontend
+- /api will go to the API
+-/api/docs will go to the API swagger
+
 
 **File:** `/etc/nginx/sites-available/mangataro`
 
@@ -108,8 +115,11 @@ sudo systemctl reload nginx
 ---
 
 ## Automated Tracking
-
+We provide two methods:
+- basic timer with systemd timer
+- n8n workflow
 ### Systemd Timer
+We can register a systemd timer to run the tracking script at 09:00 and 21:00.
 
 **File:** `/etc/systemd/system/mangataro-tracking.service`
 
@@ -149,6 +159,8 @@ sudo systemctl enable mangataro-tracking.timer
 sudo systemctl start mangataro-tracking.timer
 sudo systemctl list-timers
 ```
+## n8n workflow
+ Refer to [n8n README](../n8n/README.md) to know in detail how to use the n8n workflow
 
 ---
 

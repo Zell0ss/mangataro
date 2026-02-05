@@ -43,6 +43,7 @@ env/
 # Data Files
 *.csv
 *.json
+!n8n/workflows/*.json
 data/*
 !data/.gitkeep
 !data/img/.gitkeep

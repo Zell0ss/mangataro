@@ -26,7 +26,7 @@ Design for a clean, functional web UI to browse manga collection, track new chap
 - **Astro** - Page framework and routing
 - **TailwindCSS** - Utility-first styling
 - **Alpine.js** - Client-side interactivity (mark as read, search)
-- **Fetch API** - Backend communication (FastAPI at localhost:8000)
+- **Fetch API** - Backend communication (FastAPI at localhost:8008)
 
 **Key Principle:** Keep it simple. The API handles all logic - the frontend just displays data and sends simple commands.
 
