@@ -36,24 +36,38 @@ try {
         <p class="text-crimson-400 text-lg font-display font-semibold">{error}</p>
       </div>
     ) : (
-      <div
-        x-data="{
-          loading: false,
-          error: '',
-          formData: {
-            title: '',
-            alternative_titles: '',
-            scanlator_id: null,
-            scanlator_manga_url: '',
-            cover_url: '',
-            cover_filename: ''
-          },
-          selectedScanlator: null,
-          updateScanlator() {
-            const scanlator = scanlators.find(s => s.id === this.formData.scanlator_id);
-            this.selectedScanlator = scanlator || null;
-          },
+      <>
+        <script is:inline define:vars={{ scanlators }}>
+          window.scanlatorsList = scanlators;
+        </script>
+
+        <div
+          x-data="{
+            loading: false,
+            error: '',
+            scanlators: window.scanlatorsList,
+            formData: {
+              title: '',
+              alternative_titles: '',
+              scanlator_id: '',
+              scanlator_manga_url: '',
+              cover_url: '',
+              cover_filename: ''
+            },
+            selectedScanlator: null,
+            updateScanlator() {
+              const scanlator = this.scanlators.find(s => s.id === this.formData.scanlator_id);
+              this.selectedScanlator = scanlator || null;
+            },
           async submitForm() {
+            // Debug: log form data
+            console.log('Form data:', this.formData);
+            console.log('Title:', this.formData.title);
+            console.log('Scanlator ID:', this.formData.scanlator_id);
+            console.log('URL:', this.formData.scanlator_manga_url);
+            console.log('Cover:', this.formData.cover_url);
+
+            // Validate required fields
             if (!this.formData.title || !this.formData.scanlator_id || !this.formData.scanlator_manga_url || !this.formData.cover_url) {
               this.error = 'Please fill in all required fields';
               return;
@@ -82,7 +96,6 @@ try {
             }
           }
         }"
-        x-init="scanlators = ${JSON.stringify(scanlators)}"
         class="bg-ink-800/20 rounded-2xl ring-1 ring-ink-700/20 overflow-hidden"
       >
         <form @submit.prevent="submitForm" class="p-8 space-y-6">
@@ -213,7 +226,8 @@ try {
             <span class="text-crimson-400">*</span> Required fields
           </p>
         </form>
-      </div>
+        </div>
+      </>
     )}
   </div>
 </Layout>

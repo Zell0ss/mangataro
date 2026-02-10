@@ -174,14 +174,29 @@ async def create_manga_with_scanlator(
     logger = get_logger("api")
 
     # Check if manga with same title already exists
-    existing = db.query(models.Manga).filter(
+    existing_manga = db.query(models.Manga).filter(
         models.Manga.title == manga_data.title
     ).first()
 
-    if existing:
+    if existing_manga:
         raise HTTPException(
             status_code=400,
-            detail=f"Manga '{manga_data.title}' already exists"
+            detail=f"Manga '{manga_data.title}' already exists (ID: {existing_manga.id})"
+        )
+
+    # Check if scanlator URL already exists (prevents duplicate mappings)
+    existing_url = db.query(models.MangaScanlator).filter(
+        models.MangaScanlator.scanlator_manga_url == manga_data.scanlator_manga_url
+    ).first()
+
+    if existing_url:
+        # Get the manga details for better error message
+        manga = db.query(models.Manga).filter(
+            models.Manga.id == existing_url.manga_id
+        ).first()
+        raise HTTPException(
+            status_code=400,
+            detail=f"This scanlator URL is already mapped to manga '{manga.title}' (ID: {manga.id})"
         )
 
     # Verify scanlator exists
@@ -206,7 +221,8 @@ async def create_manga_with_scanlator(
     logger.info(f"Validating URL for manga '{manga_data.title}': {manga_data.scanlator_manga_url}")
 
     try:
-        plugin_class = get_scanlator_by_name(scanlator.name)
+        # Use class_name instead of name for plugin lookup
+        plugin_class = get_scanlator_by_name(scanlator.class_name)
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)

@@ -189,7 +189,48 @@ plugin = plugin_class()  # TypeError!
 
 **Location:** `api/services/tracker_service.py:192-198`
 
-### 3. Async Everywhere
+### 3. Scanlator Name vs Class Name
+
+**CRITICAL:** The `scanlators` table has TWO name fields that are often confused:
+
+- **`name`** - Display name (e.g., "Asura Scans") - used for UI display
+- **`class_name`** - Plugin class name (e.g., "AsuraScans") - used for plugin lookup
+
+**Always use `class_name` for plugin discovery!**
+
+**Correct Pattern:**
+```python
+# When instantiating plugins, use class_name
+scanlator = db.query(models.Scanlator).filter_by(id=scanlator_id).first()
+plugin_class = get_scanlator_by_name(scanlator.class_name)  # ✓ CORRECT
+plugin = plugin_class(page)
+```
+
+**Wrong Pattern (Will Return None):**
+```python
+# DON'T USE .name for plugin lookup
+plugin_class = get_scanlator_by_name(scanlator.name)  # ✗ WRONG - Returns None!
+plugin = plugin_class(page)  # TypeError: 'NoneType' object is not callable
+```
+
+**Why This Matters:**
+- Display names may have spaces ("Asura Scans")
+- Class names must match Python class exactly ("AsuraScans")
+- `get_scanlator_by_name()` looks for class names, not display names
+- Using `.name` instead of `.class_name` returns `None`, causing "'NoneType' object is not callable" errors
+
+**Locations Where This Has Caused Issues:**
+- `api/routers/manga.py:210` - Fixed to use `scanlator.class_name`
+- `api/services/tracker_service.py` - Already using `class_name` correctly
+
+**Database Example:**
+```sql
+-- scanlators table
+id | name          | class_name
+7  | Asura Scans   | AsuraScans
+```
+
+### 4. Async Everywhere
 
 The entire tracking system is async:
 - FastAPI endpoints are `async def`
@@ -199,7 +240,7 @@ The entire tracking system is async:
 
 **Never mix sync and async** - if you add new code, it must be async-compatible.
 
-### 4. Environment Variables
+### 5. Environment Variables
 
 Critical configuration in `.env`:
 ```bash
