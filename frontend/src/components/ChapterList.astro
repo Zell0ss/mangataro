@@ -7,46 +7,89 @@ interface Props {
 }
 
 const { chapters } = Astro.props;
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
+
+// Prepare chapter data for Alpine.js
+const chapterData = chapters.map(ch => ({
+  id: ch.id,
+  number: parseFloat(ch.chapter_number),
+  read: ch.read
+}));
 ---
 
-<div class="space-y-2" x-data="{ readChapters: new Set() }">
+<script is:inline define:vars={{ chapterData }}>
+  window.chapterData = chapterData;
+</script>
+
+<div class="divide-y divide-ink-700/30" x-data="{
+  readChapters: new Set(window.chapterData.filter(ch => ch.read).map(ch => ch.id)),
+  allChapters: window.chapterData,
+
+  markAsRead(chapterId, cascade = true) {
+    this.readChapters.add(chapterId);
+    fetch(window.__API_BASE + '/api/tracking/chapters/' + chapterId + '/mark-read', { method: 'PUT' })
+      .then(res => res.json())
+      .then(() => console.log('Marked chapter ' + chapterId + ' as read'));
+
+    if (cascade) {
+      const currentChapter = this.allChapters.find(ch => ch.id === chapterId);
+      if (currentChapter) {
+        const previousChapters = this.allChapters.filter(ch => ch.number < currentChapter.number);
+        console.log('Cascade marking ' + previousChapters.length + ' previous chapters');
+        previousChapters.forEach(ch => {
+          if (!this.readChapters.has(ch.id)) {
+            this.readChapters.add(ch.id);
+            fetch(window.__API_BASE + '/api/tracking/chapters/' + ch.id + '/mark-read', { method: 'PUT' });
+          }
+        });
+      }
+    }
+  },
+
+  markAsUnread(chapterId) {
+    this.readChapters.delete(chapterId);
+    fetch(window.__API_BASE + '/api/tracking/chapters/' + chapterId + '/mark-unread', { method: 'PUT' })
+      .then(res => res.json())
+      .then(() => console.log('Marked chapter ' + chapterId + ' as unread'));
+  }
+}">
   {chapters.map((chapter) => (
     <div
-      class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg hover:bg-slate-800/50 transition"
-      :class="readChapters.has(${chapter.id}) && 'opacity-50'"
+      class="flex items-center gap-4 px-5 py-3 hover:bg-ink-700/20 transition-colors duration-150 group"
+      :class={`readChapters.has(${chapter.id}) && 'opacity-35'`}
     >
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-3">
-          <a
-            href={chapter.chapter_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-blue-400 hover:text-blue-300 font-medium"
-          >
-            Ch. {chapter.chapter_number}
-          </a>
-          {chapter.chapter_title && (
-            <span class="text-slate-300 line-clamp-1">
-              {chapter.chapter_title}
-            </span>
-          )}
-        </div>
-        <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
-          <span>{chapter.manga_scanlator.scanlator.name}</span>
-          <span>•</span>
-          <span>{formatTimeAgo(chapter.detected_date)}</span>
-        </div>
-      </div>
-
-      <label class="flex items-center cursor-pointer">
+      <!-- Checkbox -->
+      <label class="flex items-center cursor-pointer flex-shrink-0">
         <input
           type="checkbox"
-          :checked="readChapters.has(${chapter.id}) || ${chapter.read}"
-          @change="if ($event.target.checked) { readChapters.add(${chapter.id}); fetch('${API_BASE}/api/tracking/chapters/${chapter.id}/mark-read', { method: 'PUT' }); } else { readChapters.delete(${chapter.id}); fetch('${API_BASE}/api/tracking/chapters/${chapter.id}/mark-unread', { method: 'PUT' }); }"
-          class="w-5 h-5 text-blue-600 bg-slate-800 border-slate-600 rounded focus:ring-2 focus:ring-blue-500"
+          :checked={`readChapters.has(${chapter.id}) || ${chapter.read}`}
+          @change={`$event.target.checked ? markAsRead(${chapter.id}) : markAsUnread(${chapter.id})`}
+          class="w-4 h-4 rounded border-ink-600 bg-ink-800 text-crimson-600 focus:ring-crimson-600/50 focus:ring-offset-0 focus:ring-1 cursor-pointer"
         />
       </label>
+
+      <!-- Chapter Number -->
+      <a
+        href={chapter.chapter_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition flex-shrink-0 w-16"
+      >
+        Ch. {chapter.chapter_number}
+      </a>
+
+      <!-- Title -->
+      <div class="flex-1 min-w-0">
+        {chapter.chapter_title && (
+          <span class="text-sm text-ink-200 line-clamp-1">{chapter.chapter_title}</span>
+        )}
+      </div>
+
+      <!-- Metadata -->
+      <div class="flex items-center gap-1.5 text-xs text-ink-500 flex-shrink-0">
+        <span class="text-ink-400">{chapter.manga_scanlator.scanlator.name}</span>
+        <span class="text-ink-600">&middot;</span>
+        <span>{formatTimeAgo(chapter.detected_date)}</span>
+      </div>
     </div>
   ))}
 </div>

@@ -75,10 +75,26 @@ export interface CreateMangaScanlatorRequest {
   notes?: string;
 }
 
+export interface CreateMangaWithScanlatorRequest {
+  title: string;
+  alternative_titles?: string;
+  scanlator_id: number;
+  scanlator_manga_url: string;
+  cover_url: string;
+  cover_filename?: string;
+  status?: string;
+}
+
 export const api = {
   async getUnreadChapters(limit = 50): Promise<Chapter[]> {
     const response = await fetch(`${API_BASE}/api/tracking/chapters/unread?limit=${limit}`);
     if (!response.ok) throw new Error('Failed to fetch unread chapters');
+    return response.json();
+  },
+
+  async getLatestChapters(limit = 100): Promise<Chapter[]> {
+    const response = await fetch(`${API_BASE}/api/tracking/chapters/latest?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch latest chapters');
     return response.json();
   },
 
@@ -138,5 +154,20 @@ export const api = {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to create manga-scanlator mapping');
     }
+  },
+
+  async createMangaWithScanlator(data: CreateMangaWithScanlatorRequest): Promise<Manga> {
+    const response = await fetch(`${API_BASE}/api/manga/with-scanlator`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to create manga');
+    }
+    return response.json();
   },
 };

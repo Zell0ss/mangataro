@@ -1,33 +1,81 @@
 ---
-// Navigation component
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+const links = [
+  { href: '/', label: 'Updates', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+  { href: '/library', label: 'Library', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+  { href: '/admin/add-manga', label: 'Add Manga', icon: 'M12 4v16m8-8H4' },
+  { href: '/admin/map-sources', label: 'Map Sources', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+];
+
+function isActive(linkHref: string, path: string): boolean {
+  if (linkHref === '/') return path === '/';
+  return path.startsWith(linkHref);
+}
 ---
 
-<nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+<nav class="border-b border-ink-700/40 bg-ink-900/80 backdrop-blur-xl sticky top-0 z-50">
   <div class="container mx-auto px-4">
-    <div class="flex items-center justify-between h-16">
-      <div class="flex items-center space-x-8">
-        <a href="/" class="text-xl font-bold text-blue-400">MangaTaro</a>
-        <div class="flex space-x-4">
-          <a
-            href="/"
-            class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition"
-          >
-            Updates
-          </a>
-          <a
-            href="/library"
-            class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition"
-          >
-            Library
-          </a>
-          <a
-            href="/admin/map-sources"
-            class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition"
-          >
-            Admin
-          </a>
+    <div class="flex items-center justify-between h-14">
+      <div class="flex items-center gap-10">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2.5 group">
+          <span class="w-1.5 h-5 bg-crimson-600 rounded-sm group-hover:bg-crimson-500 transition-colors duration-200"></span>
+          <span class="text-lg font-display font-extrabold tracking-tight text-ink-50">MangaTaro</span>
+        </a>
+
+        <!-- Nav Links -->
+        <div class="flex items-center gap-0.5">
+          {links.map(link => (
+            <a
+              href={link.href}
+              class:list={[
+                'relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200',
+                isActive(link.href, currentPath)
+                  ? 'text-ink-50 bg-ink-800/80'
+                  : 'text-ink-400 hover:text-ink-200 hover:bg-ink-800/40'
+              ]}
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d={link.icon} />
+              </svg>
+              {link.label}
+              {isActive(link.href, currentPath) && (
+                <span class="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-6 h-0.5 bg-crimson-600 rounded-full"></span>
+              )}
+            </a>
+          ))}
         </div>
       </div>
+
+      <!-- Theme Toggle -->
+      <button
+        x-data="{ dark: document.documentElement.getAttribute('data-theme') !== 'light' }"
+        @click="dark = !dark; document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); localStorage.setItem('mangataro-theme', dark ? 'dark' : 'light')"
+        class="p-2 rounded-lg text-ink-400 hover:text-ink-200 hover:bg-ink-800/50 transition-all duration-200"
+        :title="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        <!-- Sun icon (shown in dark mode) -->
+        <svg x-show="dark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+        <!-- Moon icon (shown in light mode) -->
+        <svg x-show="!dark" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+        </svg>
+      </button>
     </div>
   </div>
 </nav>

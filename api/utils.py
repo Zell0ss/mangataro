@@ -2,8 +2,14 @@ import os
 import re
 import requests
 from pathlib import Path
-from loguru import logger
 from datetime import datetime
+
+# Import centralized logging configuration
+import api.logging_config
+from api.logging_config import get_logger
+
+# Use general logger for utility functions
+logger = get_logger()
 
 
 def slugify(text: str) -> str:

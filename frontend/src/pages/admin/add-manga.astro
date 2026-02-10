@@ -1,0 +1,219 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { api } from '../../lib/api';
+
+let scanlators = [];
+let error = null;
+
+try {
+  scanlators = await api.getScanlators();
+
+  if (scanlators.length === 0) {
+    error = 'No active scanlators found. Please add a scanlator first.';
+  }
+} catch (e) {
+  console.error('Failed to load scanlators:', e);
+  error = e.message;
+}
+---
+
+<Layout title="Add Manga - MangaTaro">
+  <div class="max-w-2xl mx-auto">
+    <!-- Back -->
+    <a href="/library" class="inline-flex items-center gap-1.5 text-ink-400 hover:text-ink-200 mb-8 text-sm font-medium transition group">
+      <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Library
+    </a>
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-display font-extrabold tracking-tight text-ink-50">Add Manga</h1>
+      <p class="text-ink-400 mt-1 text-sm">Add a new manga to your library with tracking</p>
+    </div>
+
+    {error ? (
+      <div class="text-center py-24">
+        <p class="text-crimson-400 text-lg font-display font-semibold">{error}</p>
+      </div>
+    ) : (
+      <div
+        x-data="{
+          loading: false,
+          error: '',
+          formData: {
+            title: '',
+            alternative_titles: '',
+            scanlator_id: null,
+            scanlator_manga_url: '',
+            cover_url: '',
+            cover_filename: ''
+          },
+          selectedScanlator: null,
+          updateScanlator() {
+            const scanlator = scanlators.find(s => s.id === this.formData.scanlator_id);
+            this.selectedScanlator = scanlator || null;
+          },
+          async submitForm() {
+            if (!this.formData.title || !this.formData.scanlator_id || !this.formData.scanlator_manga_url || !this.formData.cover_url) {
+              this.error = 'Please fill in all required fields';
+              return;
+            }
+
+            this.loading = true;
+            this.error = '';
+
+            try {
+              const response = await fetch(window.__API_BASE + '/api/manga/with-scanlator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.formData)
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to create manga');
+              }
+
+              const manga = await response.json();
+              window.location.href = '/manga/' + manga.id;
+            } catch (e) {
+              this.error = e.message;
+              this.loading = false;
+            }
+          }
+        }"
+        x-init="scanlators = ${JSON.stringify(scanlators)}"
+        class="bg-ink-800/20 rounded-2xl ring-1 ring-ink-700/20 overflow-hidden"
+      >
+        <form @submit.prevent="submitForm" class="p-8 space-y-6">
+          <!-- Error Message -->
+          <div x-show="error" x-transition class="p-4 bg-crimson-900/20 ring-1 ring-crimson-600/30 rounded-xl">
+            <p class="text-crimson-400 text-sm font-medium" x-text="error"></p>
+          </div>
+
+          <!-- Manga Title -->
+          <div>
+            <label for="title" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Manga Title <span class="text-crimson-400">*</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              x-model="formData.title"
+              required
+              placeholder="Solo Leveling"
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
+          </div>
+
+          <!-- Alternative Titles -->
+          <div>
+            <label for="alt-titles" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Alternative Titles
+            </label>
+            <input
+              type="text"
+              id="alt-titles"
+              x-model="formData.alternative_titles"
+              placeholder="Na Honjaman Level Up / Only I Level Up"
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
+            <p class="text-ink-500 text-xs mt-1.5">Separate with / or commas</p>
+          </div>
+
+          <!-- Scanlator Selection -->
+          <div>
+            <label for="scanlator" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Scanlator <span class="text-crimson-400">*</span>
+            </label>
+            <select
+              id="scanlator"
+              x-model.number="formData.scanlator_id"
+              @change="updateScanlator()"
+              required
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm appearance-none cursor-pointer transition"
+            >
+              <option value="" disabled selected>Select a scanlator...</option>
+              {scanlators.map((scanlator) => (
+                <option value={scanlator.id}>{scanlator.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <!-- Scanlator URL -->
+          <div>
+            <label for="scanlator-url" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Scanlator URL <span class="text-crimson-400">*</span>
+            </label>
+            <input
+              type="url"
+              id="scanlator-url"
+              x-model="formData.scanlator_manga_url"
+              required
+              :placeholder="selectedScanlator ? selectedScanlator.base_url + '/series/manga-name' : 'https://example.com/series/manga-name'"
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
+            <p class="text-ink-500 text-xs mt-1.5">URL to the manga page on the scanlator's website</p>
+          </div>
+
+          <!-- Cover Image URL -->
+          <div>
+            <label for="cover-url" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Cover Image URL <span class="text-crimson-400">*</span>
+            </label>
+            <input
+              type="url"
+              id="cover-url"
+              x-model="formData.cover_url"
+              required
+              placeholder="https://example.com/cover.jpg"
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
+            <p class="text-ink-500 text-xs mt-1.5">Image will be downloaded and stored locally</p>
+          </div>
+
+          <!-- Cover Filename Fallback -->
+          <div>
+            <label for="cover-filename" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
+              Cover Filename Fallback
+            </label>
+            <input
+              type="text"
+              id="cover-filename"
+              x-model="formData.cover_filename"
+              placeholder="my-manga-cover.jpg"
+              class="w-full px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
+            <p class="text-ink-500 text-xs mt-1.5">Optional: filename to use if download fails</p>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex gap-3 pt-4">
+            <button
+              type="submit"
+              :disabled="loading"
+              class="flex-1 px-6 py-3 bg-crimson-600 hover:bg-crimson-500 disabled:bg-ink-700 disabled:text-ink-500 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm shadow-crimson-900/30 hover:shadow-md hover:shadow-crimson-900/40 disabled:shadow-none flex items-center justify-center gap-2"
+            >
+              <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span x-text="loading ? 'Validating and Creating...' : 'Add Manga'"></span>
+            </button>
+
+            <a
+              href="/library"
+              class="px-6 py-3 bg-ink-800/80 hover:bg-ink-700/80 text-ink-200 font-semibold rounded-xl transition-all duration-200 ring-1 ring-ink-700/30"
+            >
+              Cancel
+            </a>
+          </div>
+
+          <p class="text-ink-500 text-xs text-center pt-2">
+            <span class="text-crimson-400">*</span> Required fields
+          </p>
+        </form>
+      </div>
+    )}
+  </div>
+</Layout>

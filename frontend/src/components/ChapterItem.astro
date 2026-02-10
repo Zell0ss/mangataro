@@ -10,66 +10,61 @@ const { chapter } = Astro.props;
 const mangaScanlator = chapter.manga_scanlator;
 const manga = mangaScanlator.manga;
 const scanlator = mangaScanlator.scanlator;
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8008';
-const markReadUrl = `${API_BASE}/api/tracking/chapters/${chapter.id}/mark-read`;
+const chapterId = chapter.id;
 ---
 
 <div
-  class="flex gap-4 p-4 bg-slate-900/50 rounded-lg hover:bg-slate-800/50 transition"
+  class="group flex gap-4 p-4 rounded-xl bg-ink-800/40 ring-1 ring-ink-700/20 hover:ring-ink-600/40 hover:bg-ink-800/70 transition-all duration-200"
   x-data="{ read: false }"
-  :class="read && 'opacity-50'"
+  :class="read && 'opacity-30 scale-[0.99]'"
 >
   <!-- Manga Cover -->
-  <div class="flex-shrink-0">
-    <a href={`/manga/${manga.id}`}>
-      <img
-        src={getCoverUrl(manga.cover_filename)}
-        alt="Cover"
-        class="w-16 h-24 object-cover rounded"
-        loading="lazy"
-      />
-    </a>
-  </div>
+  <a href={`/manga/${manga.id}`} class="flex-shrink-0">
+    <img
+      src={getCoverUrl(manga.cover_filename)}
+      alt={manga.title}
+      class="w-12 h-[4.5rem] object-cover rounded-lg ring-1 ring-ink-700/50"
+      loading="lazy"
+    />
+  </a>
 
   <!-- Chapter Info -->
-  <div class="flex-1 min-w-0">
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex-1 min-w-0">
-        <a
-          href={`/manga/${manga.id}`}
-          class="text-lg font-semibold text-slate-100 hover:text-blue-400 transition line-clamp-1"
-        >
-          {manga.title}
-        </a>
-        <div class="flex items-center gap-2 mt-1 text-sm text-slate-400">
-          <a
-            href={chapter.chapter_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-blue-400 hover:text-blue-300 font-medium"
-          >
-            Chapter {chapter.chapter_number}
-          </a>
-          {chapter.chapter_title && (
-            <span class="line-clamp-1">- {chapter.chapter_title}</span>
-          )}
-        </div>
-        <div class="flex items-center gap-2 mt-1 text-xs text-slate-500">
-          <span>{scanlator.name}</span>
-          <span>•</span>
-          <span>{formatTimeAgo(chapter.detected_date)}</span>
-        </div>
-      </div>
-
-      <!-- Mark as Read Button -->
-      <button
-        @click={`read = true; fetch('${markReadUrl}', { method: 'PUT' }).catch(err => { console.error(err); read = false; });`}
-        :disabled="read"
-        class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded transition"
+  <div class="flex-1 min-w-0 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+      <a
+        href={`/manga/${manga.id}`}
+        class="font-display font-semibold text-ink-50 hover:text-crimson-400 transition line-clamp-1 text-[15px]"
       >
-        <span x-show="!read">Mark Read</span>
-        <span x-show="read" class="text-slate-400">✓ Read</span>
-      </button>
+        {manga.title}
+      </a>
+      <div class="flex items-center gap-2 mt-0.5">
+        <a
+          href={chapter.chapter_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-crimson-400 hover:text-crimson-300 font-semibold transition"
+        >
+          Ch. {chapter.chapter_number}
+        </a>
+        {chapter.chapter_title && (
+          <span class="text-sm text-ink-300 line-clamp-1">&mdash; {chapter.chapter_title}</span>
+        )}
+      </div>
+      <div class="flex items-center gap-1.5 mt-1 text-xs text-ink-500">
+        <span class="font-medium text-ink-400">{scanlator.name}</span>
+        <span class="text-ink-600">&middot;</span>
+        <span>{formatTimeAgo(chapter.detected_date)}</span>
+      </div>
     </div>
+
+    <!-- Mark as Read Button -->
+    <button
+      @click={`read = true; fetch(window.__API_BASE + '/api/tracking/chapters/${chapterId}/mark-read', { method: 'PUT' }).catch(err => { console.error(err); read = false; });`}
+      :disabled="read"
+      class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-ink-700/80 hover:bg-crimson-600 hover:text-white text-ink-300 disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      <span x-show="!read">Mark Read</span>
+      <span x-show="read">Read</span>
+    </button>
   </div>
 </div>

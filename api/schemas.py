@@ -29,6 +29,17 @@ class MangaUpdate(BaseModel):
     status: Optional[MangaStatus] = None
 
 
+class MangaWithScanlatorCreate(BaseModel):
+    """Schema for creating manga with scanlator mapping atomically"""
+    title: str
+    alternative_titles: Optional[str] = None
+    scanlator_id: int
+    scanlator_manga_url: str
+    cover_url: str
+    cover_filename: Optional[str] = None  # fallback if download fails
+    status: MangaStatus = MangaStatus.reading
+
+
 class MangaResponse(MangaBase):
     """Schema for manga response"""
     id: int

@@ -3,9 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routers import manga, scanlators, tracking
 import os
 from dotenv import load_dotenv
-from loguru import logger
 
 load_dotenv()
+
+# Import logging configuration (must be imported after load_dotenv but before logger usage)
+import api.logging_config
+from loguru import logger
 
 app = FastAPI(
     title="Manga Tracker API",

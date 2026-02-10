@@ -7,8 +7,14 @@ Sends notifications for new chapters via Discord webhooks or email.
 import os
 import httpx
 from typing import List, Dict, Optional
-from loguru import logger
 from datetime import datetime
+
+# Import centralized logging configuration
+import api.logging_config
+from api.logging_config import get_logger
+
+# Get API-specific logger for notifications
+logger = get_logger("api")
 
 
 class NotificationService:

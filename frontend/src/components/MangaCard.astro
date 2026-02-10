@@ -12,31 +12,33 @@ const { manga, unreadCount = 0 } = Astro.props;
 
 <a
   href={`/manga/${manga.id}`}
-  class="block group relative bg-slate-900/50 rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500 transition"
+  class="block group relative rounded-xl overflow-hidden bg-ink-800 ring-1 ring-ink-700/30 hover:ring-crimson-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-crimson-950/20"
 >
   <!-- Cover Image -->
-  <div class="aspect-[2/3] overflow-hidden bg-slate-800">
+  <div class="aspect-[2/3] overflow-hidden">
     <img
       src={getCoverUrl(manga.cover_filename)}
       alt={manga.title}
-      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
       loading="lazy"
     />
+    <!-- Gradient Overlay -->
+    <div class="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/20 to-transparent opacity-90"></div>
   </div>
 
   <!-- Unread Badge -->
   {unreadCount > 0 && (
-    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+    <div class="absolute top-2.5 right-2.5 bg-crimson-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-crimson-950/50 ring-2 ring-ink-800">
       {unreadCount}
     </div>
   )}
 
-  <!-- Title -->
-  <div class="p-3">
-    <h3 class="font-medium text-slate-100 line-clamp-2 text-sm">
+  <!-- Title Overlay -->
+  <div class="absolute bottom-0 left-0 right-0 p-3">
+    <h3 class="font-display font-semibold text-ink-50 line-clamp-2 text-sm leading-snug">
       {manga.title}
     </h3>
-    <p class="text-xs text-slate-500 mt-1 capitalize">
+    <p class="text-[11px] text-ink-400 mt-1 capitalize font-medium tracking-wide">
       {manga.status.replace('_', ' ')}
     </p>
   </div>

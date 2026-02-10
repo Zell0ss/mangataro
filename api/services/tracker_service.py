@@ -14,7 +14,13 @@ import sys
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from loguru import logger
+# Import centralized logging configuration
+import api.logging_config
+from api.logging_config import get_logger
+
+# Get tracking-specific logger
+logger = get_logger("tracking")
+
 from sqlalchemy import and_, func
 from sqlalchemy.orm import joinedload
 

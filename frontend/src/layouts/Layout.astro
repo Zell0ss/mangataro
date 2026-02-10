@@ -12,15 +12,139 @@ const { title } = Astro.props;
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Manga Tracker - Track your manga chapters" />
+    <meta name="description" content="MangaTaro - Track your manga chapters" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>{title}</title>
+    <!-- Prevent flash of wrong theme + set API base URL -->
+    <script is:inline>
+      (function() {
+        var theme = localStorage.getItem('mangataro-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        window.__API_BASE = window.location.protocol + '//' + window.location.hostname + ':8008';
+      })();
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen">
-    <Navigation />
-    <main class="container mx-auto px-4 py-8">
+  <body class="bg-ink-950 text-ink-50 min-h-screen font-body antialiased">
+    <Navigation currentPath={Astro.url.pathname} />
+    <main class="container mx-auto px-4 py-8 relative">
       <slot />
     </main>
   </body>
 </html>
+
+<style is:global>
+  /* ===== Dark Theme (default) ===== */
+  :root,
+  [data-theme="dark"] {
+    --ink-950: 8 8 12;
+    --ink-900: 14 14 20;
+    --ink-850: 17 17 24;
+    --ink-800: 24 24 31;
+    --ink-700: 34 34 43;
+    --ink-600: 46 46 56;
+    --ink-500: 74 74 85;
+    --ink-400: 106 106 119;
+    --ink-300: 138 138 150;
+    --ink-200: 171 171 181;
+    --ink-100: 205 205 212;
+    --ink-50: 237 237 239;
+
+    --crimson-50: 254 242 242;
+    --crimson-100: 254 226 226;
+    --crimson-200: 254 202 202;
+    --crimson-300: 252 165 165;
+    --crimson-400: 248 113 113;
+    --crimson-500: 239 68 68;
+    --crimson-600: 220 38 38;
+    --crimson-700: 185 28 28;
+    --crimson-800: 153 27 27;
+    --crimson-900: 127 29 29;
+    --crimson-950: 69 10 10;
+
+    --scrollbar-track: #0e0e14;
+    --scrollbar-thumb: #2e2e38;
+    --scrollbar-hover: #4a4a55;
+    --selection-bg: rgba(220, 38, 38, 0.3);
+    --noise-opacity: 0.025;
+
+    color-scheme: dark;
+  }
+
+  /* ===== Light Theme ===== */
+  [data-theme="light"] {
+    --ink-950: 252 251 249;
+    --ink-900: 245 244 241;
+    --ink-850: 238 237 233;
+    --ink-800: 229 228 224;
+    --ink-700: 213 212 207;
+    --ink-600: 190 189 184;
+    --ink-500: 140 139 135;
+    --ink-400: 100 99 96;
+    --ink-300: 74 73 70;
+    --ink-200: 53 52 50;
+    --ink-100: 35 34 32;
+    --ink-50: 24 23 21;
+
+    --crimson-50: 254 242 242;
+    --crimson-100: 254 226 226;
+    --crimson-200: 254 202 202;
+    --crimson-300: 220 80 80;
+    --crimson-400: 200 40 40;
+    --crimson-500: 185 30 30;
+    --crimson-600: 180 28 28;
+    --crimson-700: 155 22 22;
+    --crimson-800: 130 20 20;
+    --crimson-900: 100 22 22;
+    --crimson-950: 60 8 8;
+
+    --scrollbar-track: #f5f4f1;
+    --scrollbar-thumb: #d5d4cf;
+    --scrollbar-hover: #b0afa9;
+    --selection-bg: rgba(200, 40, 40, 0.2);
+    --noise-opacity: 0.035;
+
+    color-scheme: light;
+  }
+
+  /* ===== Global Styles ===== */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-hover);
+  }
+  ::selection {
+    background: var(--selection-bg);
+    color: rgb(var(--ink-50));
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Alpine.js cloak */
+  [x-cloak] {
+    display: none !important;
+  }
+
+  /* Noise grain texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: var(--noise-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+</style>

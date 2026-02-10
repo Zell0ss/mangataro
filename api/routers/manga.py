@@ -153,6 +153,143 @@ async def create_manga(manga: schemas.MangaCreate, db: Session = Depends(get_db)
     return db_manga
 
 
+@router.post("/with-scanlator", response_model=schemas.MangaResponse, status_code=201)
+async def create_manga_with_scanlator(
+    manga_data: schemas.MangaWithScanlatorCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create manga with scanlator mapping atomically.
+
+    Validates URL by actually scraping, downloads cover image,
+    creates manga and mapping in single transaction.
+
+    - **manga_data**: Manga and scanlator mapping data
+    """
+    from api.logging_config import get_logger
+    from api.utils import download_image
+    from scanlators import get_scanlator_by_name
+    from playwright.async_api import async_playwright
+
+    logger = get_logger("api")
+
+    # Check if manga with same title already exists
+    existing = db.query(models.Manga).filter(
+        models.Manga.title == manga_data.title
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Manga '{manga_data.title}' already exists"
+        )
+
+    # Verify scanlator exists
+    scanlator = db.query(models.Scanlator).filter(
+        models.Scanlator.id == manga_data.scanlator_id
+    ).first()
+
+    if not scanlator:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scanlator with ID {manga_data.scanlator_id} not found"
+        )
+
+    # Validate URL matches scanlator's base URL
+    if scanlator.base_url and not manga_data.scanlator_manga_url.startswith(scanlator.base_url):
+        raise HTTPException(
+            status_code=400,
+            detail=f"URL must start with scanlator's base URL: {scanlator.base_url}"
+        )
+
+    # Validate URL by actually scraping it
+    logger.info(f"Validating URL for manga '{manga_data.title}': {manga_data.scanlator_manga_url}")
+
+    try:
+        plugin_class = get_scanlator_by_name(scanlator.name)
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+
+            try:
+                plugin = plugin_class(page)
+                # Try to get chapters - if this succeeds, URL is valid
+                await plugin.obtener_capitulos(manga_data.scanlator_manga_url)
+                logger.info(f"URL validation successful for '{manga_data.title}'")
+            finally:
+                await page.close()
+                await browser.close()
+
+    except Exception as e:
+        logger.error(f"URL validation failed for '{manga_data.title}': {str(e)}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not validate scanlator URL: {str(e)}"
+        )
+
+    # Download cover image
+    cover_filename = None
+
+    try:
+        logger.info(f"Downloading cover image from: {manga_data.cover_url}")
+        cover_filename = download_image(
+            manga_data.cover_url,
+            "/data/mangataro/data/img"
+        )
+        logger.info(f"Cover image downloaded: {cover_filename}")
+    except Exception as e:
+        logger.warning(f"Cover download failed: {str(e)}")
+
+        # Use fallback filename if provided
+        if manga_data.cover_filename:
+            cover_filename = manga_data.cover_filename
+            logger.info(f"Using fallback cover filename: {cover_filename}")
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Cover image download failed and no fallback filename provided"
+            )
+
+    # Create manga and mapping in transaction
+    try:
+        # Create manga
+        db_manga = models.Manga(
+            title=manga_data.title,
+            alternative_titles=manga_data.alternative_titles,
+            cover_filename=cover_filename,
+            status=manga_data.status,
+            date_added=datetime.utcnow()
+        )
+
+        db.add(db_manga)
+        db.flush()  # Get manga.id without committing
+
+        # Create mapping
+        db_mapping = models.MangaScanlator(
+            manga_id=db_manga.id,
+            scanlator_id=manga_data.scanlator_id,
+            scanlator_manga_url=manga_data.scanlator_manga_url,
+            manually_verified=True
+        )
+
+        db.add(db_mapping)
+        db.commit()
+        db.refresh(db_manga)
+
+        logger.info(f"Successfully created manga '{manga_data.title}' with ID {db_manga.id}")
+
+        return db_manga
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create manga '{manga_data.title}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create manga: {str(e)}"
+        )
+
+
 @router.put("/{manga_id}", response_model=schemas.MangaResponse)
 async def update_manga(
     manga_id: int,

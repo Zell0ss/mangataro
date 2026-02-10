@@ -17,20 +17,20 @@ try {
 <Layout title="Library - MangaTaro">
   <div>
     {error ? (
-      <div class="text-center py-16">
-        <p class="text-red-400 text-lg">Failed to load library</p>
-        <p class="text-slate-500 text-sm mt-2">{error}</p>
+      <div class="text-center py-24">
+        <p class="text-crimson-400 text-lg font-display font-semibold">Failed to load library</p>
+        <p class="text-ink-500 text-sm mt-2">{error}</p>
       </div>
     ) : (
       <>
-        <!-- Header with Search -->
+        <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-slate-100">Library</h1>
-          <p class="text-slate-400 mt-2">{allManga.length} manga in your collection</p>
+          <h1 class="text-3xl font-display font-extrabold tracking-tight text-ink-50">Library</h1>
+          <p class="text-ink-400 mt-1 text-sm">{allManga.length} manga in your collection</p>
         </div>
 
-        <!-- Search Bar and Filtering with Alpine.js -->
-        <div class="mb-6" x-data="{
+        <!-- Search & Filters -->
+        <div class="mb-8" x-data="{
           search: '',
           status: 'all',
           isVisible(element) {
@@ -41,47 +41,34 @@ try {
             return statusMatch && searchMatch;
           }
         }">
-          <input
-            type="text"
-            x-model="search"
-            placeholder="Search manga..."
-            class="w-full max-w-md px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
-          />
-
-          <!-- Status Filter Tabs -->
-          <div class="flex gap-2 mt-4">
-            <button
-              @click="status = 'all'"
-              :class="status === 'all' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-              class="px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              All
-            </button>
-            <button
-              @click="status = 'reading'"
-              :class="status === 'reading' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-              class="px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              Reading
-            </button>
-            <button
-              @click="status = 'completed'"
-              :class="status === 'completed' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-              class="px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              Completed
-            </button>
-            <button
-              @click="status = 'on_hold'"
-              :class="status === 'on_hold' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'"
-              class="px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              On Hold
-            </button>
+          <!-- Search -->
+          <div class="relative max-w-md">
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              x-model="search"
+              placeholder="Search manga..."
+              class="w-full pl-10 pr-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 focus:border-crimson-600/40 text-ink-50 text-sm placeholder:text-ink-500 transition"
+            />
           </div>
 
-          <!-- Manga Grid with MangaCard components -->
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
+          <!-- Status Filter -->
+          <div class="flex gap-1.5 mt-4">
+            {['all', 'reading', 'completed', 'on_hold'].map(s => (
+              <button
+                @click={`status = '${s}'`}
+                :class={`status === '${s}' ? 'bg-crimson-600 text-white shadow-sm shadow-crimson-900/30' : 'bg-ink-800/80 text-ink-400 hover:text-ink-200 hover:bg-ink-700/80 ring-1 ring-ink-700/30'`}
+                class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 capitalize"
+              >
+                {s === 'all' ? 'All' : s.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          <!-- Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-8">
             {allManga.map((manga) => (
               <div
                 x-show="isVisible($el)"

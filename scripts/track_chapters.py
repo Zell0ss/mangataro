@@ -25,7 +25,13 @@ from dotenv import load_dotenv
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from loguru import logger
+# Load environment variables BEFORE importing logging config
+load_dotenv()
+
+# Import centralized logging configuration
+import api.logging_config
+from api.logging_config import get_logger
+
 from playwright.async_api import async_playwright, Browser, Page
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_
@@ -34,22 +40,8 @@ from api.database import SessionLocal
 from api.models import Manga, Scanlator, MangaScanlator, Chapter, ScrapingError
 from scanlators import get_scanlator_by_name
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
-logger.remove()  # Remove default handler
-logger.add(
-    sys.stderr,
-    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
-    level="INFO"
-)
-logger.add(
-    "/data/mangataro/logs/track_chapters_{time}.log",
-    rotation="500 MB",
-    level="DEBUG",
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
-)
+# Get tracking-specific logger
+logger = get_logger("tracking")
 
 
 class ChapterTracker:
