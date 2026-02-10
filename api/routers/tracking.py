@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import cast, Float
+from sqlalchemy import cast, Float, func
 from typing import List, Optional
 from api.dependencies import get_db
 from api import schemas, models
@@ -28,6 +28,40 @@ async def get_unread_chapters(
         models.Chapter.detected_date.desc(),
         cast(models.Chapter.chapter_number, Float).desc()
     ).offset(skip).limit(limit).all()
+
+    return chapters
+
+
+@router.get("/chapters/latest", response_model=List[schemas.ChapterWithDetails])
+async def get_latest_chapters(
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the most recent chapter for each manga, regardless of read status.
+    Returns one chapter per manga, ordered by detected_date descending.
+    """
+    # Subquery: latest chapter id per manga
+    latest_subq = (
+        db.query(
+            func.max(models.Chapter.id).label("chapter_id")
+        )
+        .join(models.MangaScanlator)
+        .group_by(models.MangaScanlator.manga_id)
+        .subquery()
+    )
+
+    chapters = (
+        db.query(models.Chapter)
+        .options(
+            joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.scanlator),
+            joinedload(models.Chapter.manga_scanlator).joinedload(models.MangaScanlator.manga),
+        )
+        .join(latest_subq, models.Chapter.id == latest_subq.c.chapter_id)
+        .order_by(models.Chapter.detected_date.desc())
+        .limit(limit)
+        .all()
+    )
 
     return chapters
 
@@ -111,11 +145,25 @@ async def add_manga_scanlator(
     ).first()
 
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Manga {scanlator_data.manga_id} is already being tracked on scanlator {scanlator_data.scanlator_id}"
-        )
+        # If existing mapping is already verified, reject duplicate
+        if existing.manually_verified:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Manga {scanlator_data.manga_id} is already being tracked on scanlator {scanlator_data.scanlator_id}"
+            )
 
+        # Update unverified mapping with new URL and mark as verified
+        existing.scanlator_manga_url = scanlator_data.scanlator_manga_url
+        existing.manually_verified = scanlator_data.manually_verified
+        existing.notes = scanlator_data.notes
+        existing.updated_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(existing)
+
+        return existing
+
+    # Create new mapping if none exists
     db_manga_scanlator = models.MangaScanlator(
         manga_id=scanlator_data.manga_id,
         scanlator_id=scanlator_data.scanlator_id,
