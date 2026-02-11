@@ -138,7 +138,7 @@ Navigate to: **http://localhost:4343/admin/add-manga**
 
 4. **Scanlator URL** (required)
    - Direct URL to manga on scanlator's website
-   - Example: "https://asuracomic.net/series/solo-leveling"
+   - Example: "https://**********/series/solo-leveling"
    - **Validated by scraping** - Must be correct!
 
 5. **Cover URL** (optional)
