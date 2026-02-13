@@ -254,6 +254,7 @@ class UnmappedMangaItem(BaseModel):
     title: str
     cover_filename: Optional[str] = None
     status: MangaStatus
+    nsfw: bool = False
 
     class Config:
         from_attributes = True
