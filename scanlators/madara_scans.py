@@ -120,8 +120,24 @@ class MadaraScans(BaseScanlator):
         Returns:
             Normalized chapter number as string
         """
-        # TODO: Implement in next task
-        pass
+        texto_lower = texto.lower()
+
+        # Remove common prefixes
+        texto_clean = re.sub(
+            r'^(chapter|ch\.?|episode|ep\.?|cap\.?|capítulo)\s*',
+            '',
+            texto_lower,
+            flags=re.IGNORECASE
+        )
+
+        # Extract first number (including decimals)
+        match = re.search(r'(\d+(?:\.\d+)?)', texto_clean)
+        if match:
+            return match.group(1)
+
+        # Fallback
+        logger.warning(f"[{self.name}] Could not parse chapter number from: {texto}")
+        return "0"
 
     def _parse_date(self, fecha_texto: str) -> datetime:
         """
