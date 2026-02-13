@@ -102,8 +102,85 @@ class MadaraScans(BaseScanlator):
         Returns:
             List of chapters with numero, titulo, url, and fecha
         """
-        # TODO: Implement in next task
-        pass
+        logger.info(f"[{self.name}] Extracting chapters from: {manga_url}")
+
+        if not await self.safe_goto(manga_url):
+            logger.error(f"[{self.name}] Failed to load manga page")
+            return []
+
+        try:
+            # Wait for chapter list to appear
+            await self.page.wait_for_selector("#chapterlist ul", timeout=10000)
+
+            # Click "Load More" until all chapters are loaded
+            load_more_count = 0
+            max_clicks = 30  # Safety limit to prevent infinite loops
+
+            while load_more_count < max_clicks:
+                load_more_btn = self.page.locator(".load-more-ch-btn")
+
+                # Check if button exists and is visible
+                if not await load_more_btn.is_visible():
+                    logger.debug(f"[{self.name}] No more chapters to load (clicked {load_more_count} times)")
+                    break
+
+                # Click button and wait for new content
+                await load_more_btn.click()
+                await asyncio.sleep(1.5)  # Wait for content to load
+                load_more_count += 1
+                logger.debug(f"[{self.name}] Clicked 'Load More' ({load_more_count})")
+
+            if load_more_count >= max_clicks:
+                logger.warning(f"[{self.name}] Reached max Load More clicks ({max_clicks})")
+
+            # Extract all chapters in one pass
+            capitulos_raw = await self.page.evaluate("""
+                () => {
+                    const items = document.querySelectorAll('#chapterlist ul li a');
+                    const chapters = [];
+
+                    for (const item of items) {
+                        const texto = item.querySelector('.ch-name')?.textContent.trim() || '';
+                        const url = item.href;
+                        const fecha_texto = item.querySelector('.ch-date')?.textContent.trim() || '';
+
+                        if (texto && url) {
+                            chapters.push({ texto, url, fecha_texto });
+                        }
+                    }
+
+                    return chapters;
+                }
+            """)
+
+            # Process and normalize chapters
+            capitulos = []
+            for cap in capitulos_raw:
+                numero = self.parsear_numero_capitulo(cap["texto"])
+                fecha = self._parse_date(cap.get("fecha_texto", ""))
+
+                capitulos.append({
+                    "numero": numero,
+                    "titulo": cap["texto"],
+                    "url": cap["url"],
+                    "fecha": fecha
+                })
+
+            # Sort chapters from oldest to newest
+            def sort_key(x):
+                try:
+                    return (float(x["numero"]), x["fecha"])
+                except ValueError:
+                    return (0, x["fecha"])
+
+            capitulos.sort(key=sort_key)
+
+            logger.info(f"[{self.name}] Extracted {len(capitulos)} chapters")
+            return capitulos
+
+        except Exception as e:
+            logger.error(f"[{self.name}] Error extracting chapters: {e}")
+            return []
 
     def parsear_numero_capitulo(self, texto: str) -> str:
         """
