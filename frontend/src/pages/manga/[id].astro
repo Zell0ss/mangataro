@@ -28,12 +28,17 @@ const unreadCount = chapters.filter(c => !c.read).length;
 ---
 
 <Layout title={manga ? `${manga.title} - MangaTaro` : 'Error - MangaTaro'}>
+  {manga && (
+    <script is:inline define:vars={{ mangaId: manga.id, mangaTitle: manga.title, mangaNsfw: manga.nsfw }}>
+      window.__MANGA_DATA__ = {
+        id: mangaId,
+        title: mangaTitle,
+        nsfw: mangaNsfw
+      };
+    </script>
+  )}
   <div class="max-w-5xl mx-auto" x-data="{
-    manga: {
-      id: null,
-      title: '',
-      nsfw: false
-    },
+    manga: window.__MANGA_DATA__ || { id: null, title: '', nsfw: false },
     async toggleNSFW() {
       const newValue = !this.manga.nsfw;
       try {
@@ -156,31 +161,4 @@ const unreadCount = chapters.filter(c => !c.read).length;
     ) : null}
   </div>
 
-  {manga && (
-    <script is:inline define:vars={{ mangaData: { id: manga.id, title: manga.title, nsfw: manga.nsfw } }}>
-      // Wait for page to load, then initialize manga data
-      window.addEventListener('DOMContentLoaded', () => {
-        // Try immediately
-        const initData = () => {
-          const el = document.querySelector('[x-data]');
-          if (el && el.__x && el.__x.$data) {
-            el.__x.$data.manga = mangaData;
-            return true;
-          }
-          return false;
-        };
-
-        // Try now
-        if (!initData()) {
-          // If not ready, wait a bit and try again
-          setTimeout(() => {
-            if (!initData()) {
-              // Final attempt after a longer delay
-              setTimeout(initData, 200);
-            }
-          }, 50);
-        }
-      });
-    </script>
-  )}
 </Layout>
