@@ -28,7 +28,35 @@ const unreadCount = chapters.filter(c => !c.read).length;
 ---
 
 <Layout title={manga ? `${manga.title} - MangaTaro` : 'Error - MangaTaro'}>
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-5xl mx-auto" x-data="{
+    manga: {
+      id: null,
+      title: '',
+      nsfw: false
+    },
+    init() {
+      this.manga = {
+        id: null,
+        title: '',
+        nsfw: false
+      };
+    },
+    async toggleNSFW() {
+      const newValue = !this.manga.nsfw;
+      try {
+        const response = await fetch(`${window.__API_BASE}/api/manga/${this.manga.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nsfw: newValue })
+        });
+        if (response.ok) {
+          this.manga.nsfw = newValue;
+        }
+      } catch (error) {
+        console.error('Failed to update NSFW flag:', error);
+      }
+    }
+  }" x-init="manga.id = null; manga.title = ''; manga.nsfw = false;">
     {error ? (
       <div class="text-center py-24">
         <p class="text-crimson-400 text-lg font-display font-semibold">Failed to load manga</p>
@@ -68,9 +96,20 @@ const unreadCount = chapters.filter(c => !c.read).length;
 
             <!-- Details -->
             <div class="flex flex-col justify-end">
-              <p class="text-crimson-400 text-xs font-semibold tracking-widest uppercase mb-2">
-                {manga.status.replace('_', ' ')}
-              </p>
+              <div class="flex items-center gap-3 mb-2">
+                <p class="text-crimson-400 text-xs font-semibold tracking-widest uppercase">
+                  {manga.status.replace('_', ' ')}
+                </p>
+                <!-- NSFW Toggle Button -->
+                <button
+                  @click="toggleNSFW()"
+                  :class="manga.nsfw ? 'bg-crimson-600 text-white ring-2 ring-crimson-500' : 'bg-ink-800 text-ink-300 ring-1 ring-ink-700'"
+                  class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:opacity-90"
+                >
+                  <span x-show="!manga.nsfw">Mark as NSFW</span>
+                  <span x-show="manga.nsfw">NSFW</span>
+                </button>
+              </div>
               <h1 class="text-3xl md:text-4xl font-display font-extrabold tracking-tight text-ink-50 leading-tight">
                 {manga.title}
               </h1>
@@ -123,4 +162,16 @@ const unreadCount = chapters.filter(c => !c.read).length;
       </>
     ) : null}
   </div>
+
+  {manga && (
+    <script is:inline define:vars={{ mangaData: { id: manga.id, title: manga.title, nsfw: manga.nsfw } }}>
+      document.addEventListener('alpine:init', () => {
+        // Find the Alpine component and initialize manga data
+        const el = document.querySelector('[x-data]');
+        if (el && el.__x) {
+          el.__x.$data.manga = mangaData;
+        }
+      });
+    </script>
+  )}
 </Layout>
