@@ -34,13 +34,6 @@ const unreadCount = chapters.filter(c => !c.read).length;
       title: '',
       nsfw: false
     },
-    init() {
-      this.manga = {
-        id: null,
-        title: '',
-        nsfw: false
-      };
-    },
     async toggleNSFW() {
       const newValue = !this.manga.nsfw;
       try {
@@ -56,7 +49,7 @@ const unreadCount = chapters.filter(c => !c.read).length;
         console.error('Failed to update NSFW flag:', error);
       }
     }
-  }" x-init="manga.id = null; manga.title = ''; manga.nsfw = false;">
+  }">
     {error ? (
       <div class="text-center py-24">
         <p class="text-crimson-400 text-lg font-display font-semibold">Failed to load manga</p>
@@ -165,11 +158,27 @@ const unreadCount = chapters.filter(c => !c.read).length;
 
   {manga && (
     <script is:inline define:vars={{ mangaData: { id: manga.id, title: manga.title, nsfw: manga.nsfw } }}>
-      document.addEventListener('alpine:init', () => {
-        // Find the Alpine component and initialize manga data
-        const el = document.querySelector('[x-data]');
-        if (el && el.__x) {
-          el.__x.$data.manga = mangaData;
+      // Wait for page to load, then initialize manga data
+      window.addEventListener('DOMContentLoaded', () => {
+        // Try immediately
+        const initData = () => {
+          const el = document.querySelector('[x-data]');
+          if (el && el.__x && el.__x.$data) {
+            el.__x.$data.manga = mangaData;
+            return true;
+          }
+          return false;
+        };
+
+        // Try now
+        if (!initData()) {
+          // If not ready, wait a bit and try again
+          setTimeout(() => {
+            if (!initData()) {
+              // Final attempt after a longer delay
+              setTimeout(initData, 200);
+            }
+          }, 50);
         }
       });
     </script>
