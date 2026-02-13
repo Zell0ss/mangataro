@@ -1,6 +1,6 @@
 # CLAUDE.md - MangaTaro Developer Guide
 
-**Last Updated:** 2026-02-03
+**Last Updated:** 2026-02-13
 **Project Status:** Production Ready (100% Complete)
 **For:** Future Claude sessions or AI assistants working on this project
 
@@ -44,6 +44,7 @@ The user wanted:
 - ✅ Automated chapter tracking (cron/n8n)
 - ✅ Discord notifications for new chapters
 - ✅ Extensible plugin architecture for scanlators
+- ✅ NSFW filtering to hide adult content (added 2026-02-13)
 - ✅ Comprehensive documentation
 
 ### Project Phases (All Complete)
@@ -377,7 +378,8 @@ mangas
 ├── titulo (manga title)
 ├── portada_url (cover image)
 ├── descripcion
-└── estado (reading status)
+├── estado (reading status)
+└── nsfw (boolean - adult content flag, indexed)
 
 scanlators
 ├── id (PK)
@@ -529,6 +531,39 @@ This prevents HTTP timeouts and allows concurrent tracking.
 - **Type safety:** IDE autocomplete and type checking
 
 **Auto-discovery:** Plugins register automatically by class name. No manual registration needed.
+
+### 7. NSFW Filtering (Added 2026-02-13)
+
+**Why frontend-only filtering?**
+- **Simple:** No API endpoint changes needed
+- **Fast:** Client-side filtering is instant (no API calls)
+- **Flexible:** Users control their own filtering preference
+- **Privacy:** Preference stored in localStorage (no server tracking)
+
+**Implementation:**
+- **Database:** `nsfw` boolean column on `mangas` table (indexed)
+- **Backend:** Field included in all manga response schemas
+- **Frontend:** Alpine.js reactive filtering with localStorage persistence
+- **UI:** Toggle switches on Library and Updates pages
+- **Badge:** Red "NSFW" indicator on manga cards when shown
+
+**Design Choices:**
+- **Default hidden:** NSFW manga hidden by default (safer UX)
+- **Global setting:** Same toggle applies to Library and Updates pages
+- **localStorage key:** `'showNSFW'` - syncs across both pages
+- **Visual indicator:** Red crimson-600 badge matches app theme
+- **Filtering logic:** `showNSFW || !isNSFW` - shows all when ON, hides NSFW when OFF
+
+**Key Files:**
+- Database migration: `scripts/migrations/add_nsfw_field.sql`
+- Backend model: `api/models.py` (line 29: `nsfw` field)
+- Backend schemas: `api/schemas.py` (MangaBase, MangaUpdate, UnmappedMangaItem)
+- Frontend badge: `frontend/src/components/MangaCard.astro` (lines 29-34)
+- Library filter: `frontend/src/pages/library.astro` (lines 36, 76-88, 102)
+- Updates filter: `frontend/src/pages/index.astro` (lines 31-36, 68-80, 111, 151)
+- Detail toggle: `frontend/src/pages/manga/[id].astro` (lines 31-43, 104-111)
+
+**Important:** All manga response endpoints must include the `nsfw` field in their schemas, or it will be stripped by Pydantic validation.
 
 ---
 
