@@ -12,6 +12,7 @@ class MangaBase(BaseModel):
     mangataro_url: Optional[str] = None
     cover_filename: Optional[str] = None
     status: MangaStatus = MangaStatus.reading
+    nsfw: bool = False
 
 
 class MangaCreate(MangaBase):
@@ -27,6 +28,7 @@ class MangaUpdate(BaseModel):
     mangataro_url: Optional[str] = None
     cover_filename: Optional[str] = None
     status: Optional[MangaStatus] = None
+    nsfw: Optional[bool] = None
 
 
 class MangaWithScanlatorCreate(BaseModel):
@@ -38,6 +40,7 @@ class MangaWithScanlatorCreate(BaseModel):
     cover_url: str
     cover_filename: Optional[str] = None  # fallback if download fails
     status: MangaStatus = MangaStatus.reading
+    nsfw: bool = False
 
 
 class MangaResponse(MangaBase):
