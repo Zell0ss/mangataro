@@ -26,6 +26,13 @@ const { manga, unreadCount = 0 } = Astro.props;
     <div class="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/20 to-transparent opacity-90"></div>
   </div>
 
+  <!-- NSFW Badge -->
+  {manga.nsfw && (
+    <div class="absolute top-2 left-2 bg-crimson-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-lg ring-1 ring-crimson-500">
+      NSFW
+    </div>
+  )}
+
   <!-- Unread Badge -->
   {unreadCount > 0 && (
     <div class="absolute top-2.5 right-2.5 bg-crimson-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-crimson-950/50 ring-2 ring-ink-800">
