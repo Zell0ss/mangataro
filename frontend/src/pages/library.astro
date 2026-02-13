@@ -33,12 +33,17 @@ try {
         <div class="mb-8" x-data="{
           search: '',
           status: 'all',
+          showNSFW: localStorage.getItem('showNSFW') === 'true',
           isVisible(element) {
             const mangaStatus = element.dataset.mangaStatus;
             const mangaTitle = element.dataset.mangaTitle;
+            const isNSFW = element.dataset.nsfw === 'true';
+
             const statusMatch = this.status === 'all' || this.status === mangaStatus;
             const searchMatch = this.search === '' || mangaTitle.includes(this.search.toLowerCase());
-            return statusMatch && searchMatch;
+            const nsfwMatch = this.showNSFW || !isNSFW;  // Show if toggle on, OR not NSFW
+
+            return statusMatch && searchMatch && nsfwMatch;
           }
         }">
           <!-- Search -->
@@ -54,17 +59,33 @@ try {
             />
           </div>
 
-          <!-- Status Filter -->
-          <div class="flex gap-1.5 mt-4">
-            {['all', 'reading', 'completed', 'on_hold'].map(s => (
-              <button
-                @click={`status = '${s}'`}
-                :class={`status === '${s}' ? 'bg-crimson-600 text-white shadow-sm shadow-crimson-900/30' : 'bg-ink-800/80 text-ink-400 hover:text-ink-200 hover:bg-ink-700/80 ring-1 ring-ink-700/30'`}
-                class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 capitalize"
-              >
-                {s === 'all' ? 'All' : s.replace('_', ' ')}
-              </button>
-            ))}
+          <!-- Status Filter & NSFW Toggle -->
+          <div class="flex items-center justify-between mt-4 gap-4">
+            <div class="flex gap-1.5">
+              {['all', 'reading', 'completed', 'on_hold'].map(s => (
+                <button
+                  @click={`status = '${s}'`}
+                  :class={`status === '${s}' ? 'bg-crimson-600 text-white shadow-sm shadow-crimson-900/30' : 'bg-ink-800/80 text-ink-400 hover:text-ink-200 hover:bg-ink-700/80 ring-1 ring-ink-700/30'`}
+                  class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 capitalize"
+                >
+                  {s === 'all' ? 'All' : s.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            <!-- NSFW Toggle -->
+            <div class="flex items-center gap-2">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  class="sr-only peer"
+                  x-model="showNSFW"
+                  @change="localStorage.setItem('showNSFW', showNSFW)"
+                />
+                <div class="w-11 h-6 bg-ink-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-crimson-600/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-crimson-600"></div>
+                <span class="ml-3 text-sm font-medium text-ink-300">Show NSFW</span>
+              </label>
+            </div>
           </div>
 
           <!-- Grid -->
@@ -78,6 +99,7 @@ try {
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
+                data-nsfw={manga.nsfw}
                 data-manga-status={manga.status}
                 data-manga-title={manga.title.toLowerCase()}
               >
