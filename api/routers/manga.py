@@ -143,6 +143,7 @@ async def create_manga(manga: schemas.MangaCreate, db: Session = Depends(get_db)
         mangataro_url=manga.mangataro_url,
         cover_filename=manga.cover_filename,
         status=manga.status,
+        nsfw=manga.nsfw,
         date_added=datetime.utcnow()
     )
 
@@ -275,6 +276,7 @@ async def create_manga_with_scanlator(
             alternative_titles=manga_data.alternative_titles,
             cover_filename=cover_filename,
             status=manga_data.status,
+            nsfw=manga_data.nsfw,
             date_added=datetime.utcnow()
         )
 
