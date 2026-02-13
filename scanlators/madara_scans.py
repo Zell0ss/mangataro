@@ -39,8 +39,55 @@ class MadaraScans(BaseScanlator):
         Returns:
             List of manga results with titulo, url, and portada
         """
-        # TODO: Implement in next task
-        pass
+        logger.info(f"[{self.name}] Searching for: {titulo}")
+
+        # WordPress search URL
+        search_url = f"{self.base_url}/?s={titulo}"
+
+        if not await self.safe_goto(search_url):
+            logger.error(f"[{self.name}] Failed to load search page")
+            return []
+
+        try:
+            # Wait for search results
+            await self.page.wait_for_selector('a[href*="/series/"]', timeout=10000)
+            await asyncio.sleep(1)  # Allow dynamic content to settle
+
+            # Extract manga entries
+            resultados = await self.page.evaluate("""
+                () => {
+                    const items = document.querySelectorAll('a[href*="/series/"]');
+                    const seen = new Set();
+                    const results = [];
+
+                    for (const item of items) {
+                        const url = item.href;
+                        if (seen.has(url)) continue;
+                        seen.add(url);
+
+                        // Extract title (from headings or spans)
+                        const titleEl = item.querySelector('h1, h2, h3, h4, .title, .manga-title');
+                        const titulo = titleEl ? titleEl.textContent.trim() : item.textContent.trim();
+
+                        // Extract cover image
+                        const imgEl = item.querySelector('img');
+                        const portada = imgEl ? (imgEl.src || imgEl.dataset.src || '') : '';
+
+                        if (titulo && url) {
+                            results.push({ titulo, url, portada });
+                        }
+                    }
+
+                    return results;
+                }
+            """)
+
+            logger.info(f"[{self.name}] Found {len(resultados)} results for '{titulo}'")
+            return resultados
+
+        except Exception as e:
+            logger.error(f"[{self.name}] Error searching for manga: {e}")
+            return []
 
     async def obtener_capitulos(self, manga_url: str) -> list[dict]:
         """
