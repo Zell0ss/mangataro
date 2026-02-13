@@ -7,6 +7,7 @@ Complete guide to using MangaTaro for tracking manga chapters.
 - [Web Interface Overview](#web-interface-overview)
 - [Checking for New Chapters](#checking-for-new-chapters)
 - [Managing Your Library](#managing-your-library)
+- [NSFW Filtering](#nsfw-filtering)
 - [Adding New Manga](#adding-new-manga)
 - [Mapping Manga to Scanlators](#mapping-manga-to-scanlators)
 - [Discord Notifications](#discord-notifications)
@@ -104,6 +105,53 @@ Click any manga to see its detail page:
 2. **Mark individual chapters** - Click "Mark as Read" on any chapter
 3. **Mark all read** - Bulk action button at top
 4. **Open chapters** - Click chapter link to read on scanlator site
+5. **Mark as NSFW** - Toggle button next to status to flag adult content
+
+---
+
+## NSFW Filtering
+
+MangaTaro includes filtering to hide manga with adult/NSFW (Not Safe For Work) content.
+
+### Marking Manga as NSFW
+
+**On Manga Detail Page:**
+
+1. Navigate to any manga detail page
+2. Find the NSFW toggle button next to the status label
+3. Click **"Mark as NSFW"** - button turns red
+4. Click again to unmark - button turns gray
+
+**Button States:**
+- **Gray button** ("Mark as NSFW") - Manga is not flagged as NSFW
+- **Red button** ("NSFW") - Manga is flagged as NSFW
+
+### Filtering NSFW Content
+
+**Library and Updates Pages:**
+
+Both the Library and Updates pages have a **"Show NSFW"** toggle switch.
+
+**Default Behavior (Safer):**
+- Toggle is **OFF** by default
+- NSFW manga are **hidden** from view
+- Provides a safe browsing experience
+
+**Showing NSFW Content:**
+- Toggle the **"Show NSFW"** switch to ON
+- NSFW manga appear with a **red "NSFW" badge**
+- Badge appears at top-left of manga cover
+
+**Features:**
+- **Global setting** - Toggle state applies to both Library and Updates pages
+- **Persistent** - Setting saved in browser, survives page refreshes
+- **Instant filtering** - No page reload needed
+- **Visual indicator** - Red badge clearly marks NSFW manga when shown
+
+**Usage Tips:**
+- Hide NSFW by default for safe browsing (especially in shared spaces)
+- Toggle ON when browsing privately
+- Use to organize adult content separately from general manga
 
 ---
 
@@ -256,6 +304,30 @@ Edit notification preferences in `.env`:
 1. Go to manga detail page
 2. Find chapter marked as read
 3. Click "Mark as Unread" button
+
+### Managing NSFW Content
+
+**Mark manga as NSFW:**
+1. Visit manga detail page
+2. Click "Mark as NSFW" button next to status
+3. Button turns red to confirm
+
+**Unmark manga as NSFW:**
+1. Visit manga detail page
+2. Click red "NSFW" button
+3. Button turns gray to confirm removal
+
+**Hide NSFW manga:**
+1. Visit Library or Updates page
+2. Ensure "Show NSFW" toggle is OFF (default)
+3. NSFW manga are hidden from view
+
+**Show NSFW manga:**
+1. Visit Library or Updates page
+2. Toggle "Show NSFW" switch to ON
+3. NSFW manga appear with red badges
+
+**Note:** Toggle state is saved automatically and syncs across both Library and Updates pages.
 
 ### Checking Tracking Status
 
