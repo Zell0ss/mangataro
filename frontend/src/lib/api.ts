@@ -7,6 +7,7 @@ export interface Manga {
   cover_filename: string | null;
   mangataro_url: string | null;
   status: string;
+  nsfw: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,7 @@ export interface Chapter {
       id: number;
       title: string;
       cover_filename: string | null;
+      nsfw: boolean;
     };
   };
 }
@@ -63,6 +65,7 @@ export interface UnmappedMangaResponse {
     title: string;
     cover_filename: string | null;
     status: string;
+    nsfw: boolean;
   }>;
   count: number;
 }
