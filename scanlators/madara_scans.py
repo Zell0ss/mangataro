@@ -155,5 +155,57 @@ class MadaraScans(BaseScanlator):
         Returns:
             datetime object (defaults to now if parsing fails)
         """
-        # TODO: Implement in next task
-        pass
+        if not fecha_texto:
+            return datetime.now()
+
+        fecha_texto = fecha_texto.strip().lower()
+
+        try:
+            # Handle relative dates: "X days ago"
+            if "ago" in fecha_texto:
+                match = re.search(r'(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago', fecha_texto)
+                if match:
+                    amount = int(match.group(1))
+                    unit = match.group(2)
+
+                    if unit == "second":
+                        return datetime.now() - timedelta(seconds=amount)
+                    elif unit == "minute":
+                        return datetime.now() - timedelta(minutes=amount)
+                    elif unit == "hour":
+                        return datetime.now() - timedelta(hours=amount)
+                    elif unit == "day":
+                        return datetime.now() - timedelta(days=amount)
+                    elif unit == "week":
+                        return datetime.now() - timedelta(weeks=amount)
+                    elif unit == "month":
+                        return datetime.now() - timedelta(days=amount * 30)
+                    elif unit == "year":
+                        return datetime.now() - timedelta(days=amount * 365)
+
+            # Handle "yesterday" and "today"
+            if "yesterday" in fecha_texto:
+                return datetime.now() - timedelta(days=1)
+            if "today" in fecha_texto:
+                return datetime.now()
+
+            # Try standard date formats
+            date_formats = [
+                "%b %d, %Y",    # Jan 15, 2026
+                "%B %d, %Y",    # January 15, 2026
+                "%Y-%m-%d",     # 2026-01-15
+                "%d/%m/%Y",     # 15/01/2026
+                "%m/%d/%Y",     # 01/15/2026
+            ]
+
+            for fmt in date_formats:
+                try:
+                    return datetime.strptime(fecha_texto, fmt)
+                except ValueError:
+                    continue
+
+        except Exception as e:
+            logger.debug(f"[{self.name}] Error parsing date '{fecha_texto}': {e}")
+
+        # Fallback to current datetime
+        return datetime.now()
