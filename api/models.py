@@ -26,6 +26,7 @@ class Manga(Base):
     date_added = Column(DateTime)
     last_checked = Column(DateTime)
     status = Column(Enum(MangaStatus), default=MangaStatus.reading, index=True)
+    nsfw = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
