@@ -685,6 +685,27 @@ This prevents HTTP timeouts and allows concurrent tracking.
 
 ### Start Development Environment
 
+**IMPORTANT:** Both the API and frontend are managed by a single systemd service.
+
+**Production (Systemd Service):**
+```bash
+# Start both API and frontend
+sudo systemctl start mangataro.service
+
+# Stop both API and frontend
+sudo systemctl stop mangataro.service
+
+# Restart both API and frontend (required after code changes)
+sudo systemctl restart mangataro.service
+
+# Check status
+sudo systemctl status mangataro.service
+
+# View logs
+sudo journalctl -u mangataro.service -f
+```
+
+**Manual Development (Alternative):**
 ```bash
 # Terminal 1: API
 cd /data/mangataro
@@ -699,6 +720,8 @@ npm run dev
 # Frontend: http://localhost:4343
 # API Docs: http://localhost:8008/docs
 ```
+
+**Note:** The systemd service runs both servers via `/data/mangataro/scripts/start_servers.sh`. If you need code hot-reloading during development, use the manual approach with `--reload` flag for the API.
 
 ### Run Chapter Tracking Manually
 
@@ -845,6 +868,38 @@ python scripts/track_chapters.py --limit 5
 
 # Use headless mode (uses less memory)
 # Don't use --visible flag
+```
+
+**Issue: API won't start - "address already in use" on port 8008**
+
+**Cause:** Another process is holding port 8008 (could be old API process, Playwright, or other service).
+
+**Fix:**
+```bash
+# Find what's using port 8008
+sudo lsof -i :8008
+
+# Kill the process (replace PID with actual process ID)
+sudo kill -9 <PID>
+
+# Restart the service
+sudo systemctl restart mangataro.service
+```
+
+**Issue: Code changes not taking effect**
+
+**Cause:** The systemd service runs without `--reload` flag, so changes require manual restart.
+
+**Fix:**
+```bash
+# After making code changes, restart the service
+sudo systemctl restart mangataro.service
+
+# Or for development with hot-reload, stop the service and run manually:
+sudo systemctl stop mangataro.service
+cd /data/mangataro
+source .venv/bin/activate
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8008
 ```
 
 ### Debug Mode
