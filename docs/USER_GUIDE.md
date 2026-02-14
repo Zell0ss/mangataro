@@ -6,6 +6,7 @@ Complete guide to using MangaTaro for tracking manga chapters.
 
 - [Web Interface Overview](#web-interface-overview)
 - [Checking for New Chapters](#checking-for-new-chapters)
+- [Supported Scanlators](#supported-scanlators)
 - [Managing Your Library](#managing-your-library)
 - [NSFW Filtering](#nsfw-filtering)
 - [Adding New Manga](#adding-new-manga)
@@ -63,6 +64,35 @@ Navigate to: **http://localhost:4343/**
 ### Real-Time Updates
 
 New chapters appear automatically when tracking runs. No need to refresh!
+
+---
+
+## Supported Scanlators
+
+MangaTaro currently supports the following scanlation websites:
+
+### AsuraScans
+- **URL:** https://asura-scans.com
+- **Status:** ✅ Fully functional
+- **Language:** English
+- **Content:** Popular manga and manhwa
+
+### RavenScans
+- **URL:** https://ravenscans.com
+- **Status:** ✅ Fully functional
+- **Language:** English
+- **Content:** Manga and manhwa
+
+### MadaraScans
+- **URL:** https://madarascans.com
+- **Status:** ⚠️ Plugin complete, experiencing timeout issues
+- **Language:** English/Spanish
+- **Content:** Manga and manhwa
+- **Note:** Site may load slowly or have anti-bot measures. Increase timeout if needed.
+
+**Adding More Scanlators:**
+
+New scanlator plugins can be added by creating a plugin class in `/data/mangataro/scanlators/`. See `template.py` for the structure.
 
 ---
 
