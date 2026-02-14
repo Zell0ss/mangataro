@@ -54,21 +54,48 @@ async def list_manga(
 
 @router.get("/unmapped", response_model=schemas.UnmappedMangaResponse)
 async def get_unmapped_manga(
-    scanlator_id: Optional[int] = Query(None, description="The scanlator ID to check against"),
+    scanlator_id: Optional[int] = Query(None, description="The scanlator ID to check against (optional - if not provided, returns manga with NO mappings)"),
     db: Session = Depends(get_db)
 ):
     """
-    Get all manga that do NOT have a verified mapping to the specified scanlator.
+    Get unmapped manga.
 
-    Returns manga that are not in the manga_scanlator table with manually_verified=1
-    for the given scanlator_id, ordered by title.
+    Two modes:
+    1. If scanlator_id is provided: Returns manga that do NOT have a verified mapping to that specific scanlator
+    2. If scanlator_id is None: Returns manga that have NO mappings to ANY scanlator
 
-    - **scanlator_id**: The scanlator ID to check against (required)
+    Returns manga ordered by title.
+
+    - **scanlator_id**: The scanlator ID to check against (optional)
     """
-    # Validate scanlator_id is provided
+    # Mode 1: Manga with NO mappings to ANY scanlator
     if scanlator_id is None:
-        raise HTTPException(status_code=400, detail="scanlator_id query parameter is required")
+        # Get all manga IDs that have ANY verified mapping
+        manga_with_mappings = db.query(models.MangaScanlator.manga_id).filter(
+            models.MangaScanlator.manually_verified == True
+        ).distinct().all()
 
+        # Extract IDs
+        mapped_ids = [manga_id[0] for manga_id in manga_with_mappings]
+
+        # Query manga NOT in the mapped list
+        query = db.query(models.Manga)
+        if mapped_ids:
+            query = query.filter(models.Manga.id.notin_(mapped_ids))
+
+        # Order by title
+        unmapped_manga = query.order_by(models.Manga.title).all()
+
+        # Build response with null scanlator info
+        return {
+            "scanlator_id": None,
+            "scanlator_name": None,
+            "base_url": None,
+            "unmapped_manga": unmapped_manga,
+            "count": len(unmapped_manga)
+        }
+
+    # Mode 2: Manga not mapped to specific scanlator
     # Validate scanlator_id is valid integer
     if scanlator_id <= 0:
         raise HTTPException(status_code=400, detail="scanlator_id must be a positive integer")

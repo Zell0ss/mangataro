@@ -16,6 +16,10 @@ try {
   if (scanlators.length === 0) {
     error = 'No active scanlators found. Please add a scanlator first.';
   } else {
+    // Get manga with NO mappings to ANY scanlator
+    unmappedData = await api.getUnmappedManga();
+
+    // Select scanlator for mapping (not for filtering)
     if (scanlatorIdParam) {
       const requestedId = parseInt(scanlatorIdParam);
       selectedScanlator = scanlators.find(s => s.id === requestedId);
@@ -23,10 +27,6 @@ try {
 
     if (!selectedScanlator) {
       selectedScanlator = scanlators.find(s => s.name === 'AsuraScans') || scanlators[0];
-    }
-
-    if (selectedScanlator) {
-      unmappedData = await api.getUnmappedManga(selectedScanlator.id);
     }
   }
 } catch (e) {
@@ -46,7 +46,7 @@ try {
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-3xl font-display font-extrabold tracking-tight text-ink-50">Map Sources</h1>
-      <p class="text-ink-400 mt-1 text-sm">Add tracking URLs for manga from different scanlators</p>
+      <p class="text-ink-400 mt-1 text-sm">Add tracking URLs for manga that don't have any scanlator yet</p>
     </div>
 
     {error ? (
@@ -58,8 +58,9 @@ try {
         <!-- Scanlator Selector -->
         <div class="mb-8">
           <label for="scanlator-select" class="block text-xs font-semibold text-ink-400 uppercase tracking-wider mb-2">
-            Scanlator
+            Map to Scanlator
           </label>
+          <p class="text-ink-500 text-xs mb-3">Choose which scanlator you want to add URLs for</p>
           <select
             id="scanlator-select"
             class="w-full max-w-xs px-4 py-2.5 bg-ink-800/80 border border-ink-700/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-crimson-600/40 text-ink-50 text-sm appearance-none cursor-pointer"
@@ -95,7 +96,7 @@ try {
             </div>
             <h2 class="text-xl font-display font-extrabold text-ink-50 mb-1">All Mapped</h2>
             <p class="text-ink-400 text-sm">
-              Every manga is mapped to {unmappedData.scanlator_name}
+              Every manga has at least one scanlator source
             </p>
           </div>
         ) : unmappedData && (
@@ -125,7 +126,7 @@ try {
                       this.isValid = false;
                       return;
                     }
-                    const baseUrl = '${unmappedData.base_url || ''}';
+                    const baseUrl = '${selectedScanlator.base_url || ''}';
                     if (baseUrl && !this.url.includes(baseUrl.replace('https://', '').replace('http://', ''))) {
                       const domain = baseUrl.replace('https://', '').replace('http://', '').replace(/\\/$/, '');
                       this.error = \`URL must be from \${domain}\`;

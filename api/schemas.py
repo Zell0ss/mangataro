@@ -262,8 +262,8 @@ class UnmappedMangaItem(BaseModel):
 
 class UnmappedMangaResponse(BaseModel):
     """Response for unmapped manga endpoint"""
-    scanlator_id: int
-    scanlator_name: str
+    scanlator_id: Optional[int] = None
+    scanlator_name: Optional[str] = None
     base_url: Optional[str] = None
     unmapped_manga: List[UnmappedMangaItem]
     count: int

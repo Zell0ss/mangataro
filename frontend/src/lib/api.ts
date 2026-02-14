@@ -57,8 +57,8 @@ export interface Scanlator {
 }
 
 export interface UnmappedMangaResponse {
-  scanlator_id: number;
-  scanlator_name: string;
+  scanlator_id: number | null;
+  scanlator_name: string | null;
   base_url: string | null;
   unmapped_manga: Array<{
     id: number;
@@ -133,8 +133,11 @@ export const api = {
     if (!response.ok) throw new Error('Failed to mark chapter as unread');
   },
 
-  async getUnmappedManga(scanlatorId: number): Promise<UnmappedMangaResponse> {
-    const response = await fetch(`${API_BASE}/api/manga/unmapped?scanlator_id=${scanlatorId}`);
+  async getUnmappedManga(scanlatorId?: number): Promise<UnmappedMangaResponse> {
+    const url = scanlatorId
+      ? `${API_BASE}/api/manga/unmapped?scanlator_id=${scanlatorId}`
+      : `${API_BASE}/api/manga/unmapped`;
+    const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch unmapped manga');
     return response.json();
   },
