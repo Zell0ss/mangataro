@@ -93,8 +93,8 @@ class MadaraScans(BaseScanlator):
         """
         Extract chapters from a manga page on MadaraScans.
 
-        This implementation clicks the "Load More" button repeatedly until
-        all chapters are loaded before extracting.
+        MadaraScans loads all chapters at once (no pagination),
+        using .ch-main-anchor elements.
 
         Args:
             manga_url: Full URL to the manga's page
@@ -110,39 +110,32 @@ class MadaraScans(BaseScanlator):
 
         try:
             # Wait for chapter list to appear
-            await self.page.wait_for_selector("#chapterlist ul", timeout=10000)
+            # MadaraScans uses .ch-main-anchor for chapter links
+            await self.page.wait_for_selector(".ch-main-anchor", timeout=10000)
 
-            # Click "Load More" until all chapters are loaded
-            load_more_count = 0
-            max_clicks = 30  # Safety limit to prevent infinite loops
-
-            while load_more_count < max_clicks:
-                load_more_btn = self.page.locator(".load-more-ch-btn")
-
-                # Check if button exists and is visible
-                if not await load_more_btn.is_visible():
-                    logger.debug(f"[{self.name}] No more chapters to load (clicked {load_more_count} times)")
-                    break
-
-                # Click button and wait for new content
-                await load_more_btn.click()
-                await asyncio.sleep(1.5)  # Wait for content to load
-                load_more_count += 1
-                logger.debug(f"[{self.name}] Clicked 'Load More' ({load_more_count})")
-
-            if load_more_count >= max_clicks:
-                logger.warning(f"[{self.name}] Reached max Load More clicks ({max_clicks})")
+            # Wait a bit for dynamic content to settle
+            await asyncio.sleep(1)
 
             # Extract all chapters in one pass
             capitulos_raw = await self.page.evaluate("""
                 () => {
-                    const items = document.querySelectorAll('#chapterlist ul li a');
+                    const items = document.querySelectorAll('.ch-main-anchor');
                     const chapters = [];
 
                     for (const item of items) {
-                        const texto = item.querySelector('.ch-name')?.textContent.trim() || '';
+                        // Chapter title is in the anchor's direct text content
+                        const fullText = item.textContent.trim();
+
+                        // Extract just the chapter part (before the date/whitespace)
+                        // Split by newline and take first line
+                        const lines = fullText.split(/\\s*\\n\\s*/);
+                        const texto = lines[0].trim();
+
                         const url = item.href;
-                        const fecha_texto = item.querySelector('.ch-date')?.textContent.trim() || '';
+
+                        // Date is in .ch-date element
+                        const dateEl = item.querySelector('.ch-date');
+                        const fecha_texto = dateEl ? dateEl.textContent.trim() : '';
 
                         if (texto && url) {
                             chapters.push({ texto, url, fecha_texto });
