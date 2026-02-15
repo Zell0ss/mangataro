@@ -1,10 +1,67 @@
 # Ready for Tomorrow - Quick Start Guide
 
-**Date:** 2026-02-03 (End of Day)
-**Status:** 14/14 tasks complete (100%) ✅
-**MangaTaro closes in:** 12 days
+**Date:** 2026-02-15 (End of Day)
+**Status:** Production + Enhancements ✅
+**Project:** Fully operational and actively maintained
 
-🎉 **PROJECT COMPLETE!** All features implemented and documented.
+🎉 **PROJECT COMPLETE + NEW ENHANCEMENTS!** All core features operational with recent improvements.
+
+---
+
+## 🆕 Recent Enhancements (2026-02-13 to 2026-02-15)
+
+### MadaraScans Plugin Implementation ✅
+- **Date:** 2026-02-13 to 2026-02-14
+- **Feature:** Complete MadaraScans scanlator plugin
+  - Search functionality (8 results for "villain")
+  - Chapter extraction (41 chapters successfully extracted)
+  - Date parsing with WordPress format support
+  - Chapter number parsing
+  - Fixed selector issues (`.ch-main-anchor` instead of `#chapterlist`)
+- **Database:** Scanlator ID 33, Mapping ID 128 for manga ID 23
+- **Status:** Tested and operational ✓
+
+### Map Sources Page Fix ✅
+- **Date:** 2026-02-15
+- **Feature:** Improved manga-scanlator mapping workflow
+  - **Before:** Showed manga not mapped to selected scanlator (confusing filtering)
+  - **After:** Shows ONLY manga with NO scanlator mappings at all (55 total)
+  - Scanlator dropdown now only selects which scanlator to map TO
+  - Backend supports both modes: with/without scanlator_id parameter
+- **API Changes:**
+  - `/api/manga/unmapped` now accepts optional `scanlator_id`
+  - Returns manga with zero mappings when called without parameter
+- **UI Updates:**
+  - Clearer text: "Add tracking URLs for manga that don't have any scanlator yet"
+  - Better UX: No filter confusion, direct workflow
+- **Status:** Deployed and working ✓
+
+### Manga Detail Page - Scanlator Management ✅
+- **Date:** 2026-02-15
+- **Feature:** Full scanlator source management on manga detail pages
+  - **View Sources:** Shows all mapped scanlators with clickable URLs
+  - **Remove Sources:** Remove button with confirmation (warns about chapter deletion)
+  - **Add Sources:** Dropdown + URL input to add new sources
+  - Smart filtering: Only shows available scanlators not yet added
+  - Empty states and "all used" messaging
+- **Implementation:**
+  - Alpine.js for reactive state (like NSFW toggle)
+  - Uses existing API endpoints (no backend changes needed)
+  - Inline add/remove without page reload
+- **Location:** Between Hero section and Chapters section
+- **Status:** Fully functional ✓
+
+### Documentation & Infrastructure ✅
+- **Date:** 2026-02-15
+- **CLAUDE.md Updates:**
+  - Documented systemd service management (`mangataro.service`)
+  - Both API and frontend managed by single service
+  - Troubleshooting: Port conflicts, code changes not taking effect
+  - Commands for start/stop/restart/status
+- **Infrastructure Issues Resolved:**
+  - Fixed stuck Playwright process holding port 8008
+  - Proper systemd service restart procedures documented
+- **Status:** Documentation complete ✓
 
 ---
 
