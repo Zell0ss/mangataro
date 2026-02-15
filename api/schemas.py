@@ -55,6 +55,14 @@ class MangaResponse(MangaBase):
         from_attributes = True
 
 
+class PaginatedMangaResponse(BaseModel):
+    """Paginated list of manga"""
+    items: List[MangaResponse]
+    total: int
+    skip: int
+    limit: int
+
+
 # Scanlator schemas
 class ScanlatorBase(BaseModel):
     name: str

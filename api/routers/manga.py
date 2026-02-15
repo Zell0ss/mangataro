@@ -9,19 +9,19 @@ from datetime import datetime
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.MangaResponse])
+@router.get("/", response_model=schemas.PaginatedMangaResponse)
 async def list_manga(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
+    limit: int = Query(48, ge=1, le=500),
     status: Optional[models.MangaStatus] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
-    List all manga with optional filtering.
+    List all manga with optional filtering and pagination.
 
     - **skip**: Number of records to skip (pagination)
-    - **limit**: Maximum number of records to return
+    - **limit**: Maximum number of records to return (default 48, max 500)
     - **status**: Filter by manga status (reading, completed, on_hold, plan_to_read)
     - **search**: Search in title and alternative titles
     """
@@ -39,6 +39,9 @@ async def list_manga(
             (models.Manga.alternative_titles.like(search_pattern))
         )
 
+    # Get total count before pagination
+    total = query.count()
+
     # Order by last checked (most recently checked first, nulls last)
     # MariaDB doesn't support NULLS LAST, so we order by (last_checked IS NULL), last_checked DESC
     query = query.order_by(
@@ -49,7 +52,12 @@ async def list_manga(
     # Apply pagination
     manga = query.offset(skip).limit(limit).all()
 
-    return manga
+    return {
+        "items": manga,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 @router.get("/unmapped", response_model=schemas.UnmappedMangaResponse)

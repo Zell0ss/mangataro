@@ -36,6 +36,13 @@ export interface Chapter {
   };
 }
 
+export interface PaginatedMangaResponse {
+  items: Manga[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 export interface MangaWithScanlators extends Manga {
   manga_scanlators: Array<{
     id: number;
@@ -101,8 +108,18 @@ export const api = {
     return response.json();
   },
 
-  async getAllManga(): Promise<Manga[]> {
-    const response = await fetch(`${API_BASE}/api/manga?limit=100`);
+  async getMangaPage(params: {
+    skip?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  } = {}): Promise<PaginatedMangaResponse> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('limit', String(params.limit ?? 48));
+    searchParams.set('skip', String(params.skip ?? 0));
+    if (params.search) searchParams.set('search', params.search);
+    if (params.status && params.status !== 'all') searchParams.set('status', params.status);
+    const response = await fetch(`${API_BASE}/api/manga?${searchParams}`);
     if (!response.ok) throw new Error('Failed to fetch manga');
     return response.json();
   },
