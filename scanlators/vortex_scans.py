@@ -85,6 +85,8 @@ class VortexScans(BaseScanlator):
 
         def handle_request(request):
             nonlocal post_id
+            if post_id is not None:
+                return  # already captured; don't let a later match overwrite
             if 'api.vortexscans.org/api/' in request.url and 'postId=' in request.url:
                 m = re.search(r'postId=(\d+)', request.url)
                 if m:
