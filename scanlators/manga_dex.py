@@ -163,8 +163,9 @@ class MangaDex(BaseScanlator):
         except Exception as e:
             logger.error(f"[{self.name}] Error fetching chapters: {e}")
             if all_chapters:
-                logger.warning(f"[{self.name}] {len(all_chapters)} chapters were fetched before the error but are being discarded")
-            return []
+                logger.warning(f"[{self.name}] Returning {len(all_chapters)} partial results due to error")
+            else:
+                return []
 
         # Map to plugin format
         capitulos = []
