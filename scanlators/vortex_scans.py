@@ -147,9 +147,10 @@ class VortexScans(BaseScanlator):
 
                     logger.debug(f"[{self.name}] Fetched {len(all_chapters)}/{total} chapters")
 
-                    if not page_chapters or len(page_chapters) < CHAPTERS_TAKE:
+                    if not page_chapters or len(page_chapters) < CHAPTERS_TAKE or len(all_chapters) >= total:
                         break
                     skip += CHAPTERS_TAKE
+                    await asyncio.sleep(0.5)  # courtesy delay between paginated requests
 
         except Exception as e:
             logger.error(f"[{self.name}] Error fetching chapters: {e}")
