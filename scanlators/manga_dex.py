@@ -24,7 +24,7 @@ class MangaDex(BaseScanlator):
     """
 
     API_BASE = "https://api.mangadex.org"
-    CHAPTERS_LIMIT = 500  # Max per request
+    CHAPTERS_LIMIT = 100  # Max per request (MangaDex API limit for non-feed endpoints)
 
     def __init__(self, playwright_page: Page):
         super().__init__(playwright_page)
