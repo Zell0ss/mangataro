@@ -162,6 +162,8 @@ class MangaDex(BaseScanlator):
 
         except Exception as e:
             logger.error(f"[{self.name}] Error fetching chapters: {e}")
+            if all_chapters:
+                logger.warning(f"[{self.name}] {len(all_chapters)} chapters were fetched before the error but are being discarded")
             return []
 
         # Map to plugin format
@@ -180,7 +182,7 @@ class MangaDex(BaseScanlator):
                 # Convert to naive UTC for consistency with other plugins
                 fecha = fecha.replace(tzinfo=None)
             except (ValueError, AttributeError):
-                fecha = datetime.utcnow()
+                fecha = datetime.now(timezone.utc).replace(tzinfo=None)
 
             capitulos.append({
                 "numero": numero,
