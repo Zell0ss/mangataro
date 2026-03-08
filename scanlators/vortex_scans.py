@@ -34,6 +34,7 @@ class VortexScans(BaseScanlator):
         self.base_url = "https://vortexscans.org"
 
     def parsear_numero_capitulo(self, texto: str) -> str:
+        """Parse chapter number from text. VortexScans API returns clean integers."""
         texto = str(texto).strip()
         if re.match(r'^\d+(\.\d+)?$', texto):
             return texto
@@ -44,6 +45,7 @@ class VortexScans(BaseScanlator):
         return "0"
 
     async def buscar_manga(self, titulo: str) -> list[dict]:
+        """Search VortexScans for manga by title using the public REST API. Returns list of {titulo, url, portada}."""
         logger.info(f"[{self.name}] Searching for: {titulo!r}")
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -58,11 +60,12 @@ class VortexScans(BaseScanlator):
             posts = data.get("posts", [])
             results = [
                 {
-                    "titulo": p["postTitle"],
+                    "titulo": p.get("postTitle", ""),
                     "url": f"https://vortexscans.org/series/{p['slug']}",
                     "portada": p.get("featuredImage") or "",
                 }
                 for p in posts
+                if p.get("slug")  # skip malformed entries with no slug
             ]
             logger.info(f"[{self.name}] Found {len(results)} results")
             return results
@@ -89,7 +92,9 @@ class VortexScans(BaseScanlator):
 
         self.page.on("request", handle_request)
         try:
-            await self.safe_goto(manga_url, timeout=30000)
+            if not await self.safe_goto(manga_url, timeout=30000):
+                logger.error(f"[{self.name}] Failed to load manga page: {manga_url}")
+                return None
             for _ in range(20):
                 if post_id is not None:
                     break
@@ -100,6 +105,7 @@ class VortexScans(BaseScanlator):
         return post_id
 
     async def obtener_capitulos(self, manga_url: str) -> list[dict]:
+        """Fetch all chapters for a manga from VortexScans. Uses Playwright to extract postId, then paginates via httpx."""
         logger.info(f"[{self.name}] Fetching chapters from: {manga_url}")
 
         try:
@@ -128,13 +134,13 @@ class VortexScans(BaseScanlator):
                     response.raise_for_status()
                     data = response.json()
 
-                    page_chapters = data["post"]["chapters"]
-                    total = data["totalChapterCount"]
+                    page_chapters = data.get("post", {}).get("chapters", [])
+                    total = data.get("totalChapterCount", 0)
                     all_chapters.extend(page_chapters)
 
                     logger.debug(f"[{self.name}] Fetched {len(all_chapters)}/{total} chapters")
 
-                    if len(page_chapters) < CHAPTERS_TAKE:
+                    if not page_chapters or len(page_chapters) < CHAPTERS_TAKE:
                         break
                     skip += CHAPTERS_TAKE
 
@@ -147,9 +153,14 @@ class VortexScans(BaseScanlator):
 
         capitulos = []
         for ch in all_chapters:
-            numero = self.parsear_numero_capitulo(ch["number"])
+            number_raw = ch.get("number", 0)
+            numero = self.parsear_numero_capitulo(number_raw)
             titulo = ch.get("title") or ""
-            chapter_url = f"https://vortexscans.org/series/{manga_slug}/{ch['slug']}"
+            chapter_slug = ch.get("slug", "")
+            if not chapter_slug:
+                logger.warning(f"[{self.name}] Chapter {number_raw} has no slug, skipping")
+                continue
+            chapter_url = f"https://vortexscans.org/series/{manga_slug}/{chapter_slug}"
 
             created_at = ch.get("createdAt", "")
             try:
