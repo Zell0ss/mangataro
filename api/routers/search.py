@@ -13,11 +13,12 @@ from loguru import logger
 
 from api.dependencies import get_db
 from api import models
-from scanlators import get_scanlator_by_name
+from scanlators import get_scanlator_classes
 
 router = APIRouter()
 
 SEARCH_TIMEOUT = 30.0  # seconds per scanlator
+_browser_lock = asyncio.Semaphore(1)  # one search at a time to prevent OOM
 
 
 async def _search_one(plugin_class, page, query: str, scanlator_name: str) -> dict:
@@ -60,9 +61,10 @@ async def search_manga(
     ).order_by(models.Scanlator.name).all()
 
     # Filter to only those with an available plugin class
+    plugin_classes = get_scanlator_classes()
     searchable = []
     for s in scanlators:
-        plugin_class = get_scanlator_by_name(s.class_name)
+        plugin_class = plugin_classes.get(s.class_name)
         if plugin_class:
             searchable.append((s, plugin_class))
         else:
@@ -71,24 +73,25 @@ async def search_manga(
     if not searchable:
         return {"query": q, "results": []}
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
-        pages = []
-        try:
-            # Create one page per scanlator (shared browser, lower resource use)
-            for _ in searchable:
-                pages.append(await browser.new_page())
+    async with _browser_lock:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
+            pages = []
+            try:
+                # Create one page per scanlator (shared browser, lower resource use)
+                for _ in searchable:
+                    pages.append(await browser.new_page())
 
-            tasks = [
-                _search_one(plugin_class, pages[i], q, s.name)
-                for i, (s, plugin_class) in enumerate(searchable)
-            ]
+                tasks = [
+                    _search_one(plugin_class, pages[i], q, s.name)
+                    for i, (s, plugin_class) in enumerate(searchable)
+                ]
 
-            results = await asyncio.gather(*tasks)
-        finally:
-            for page in pages:
-                await page.close()
-            await browser.close()
+                results = await asyncio.gather(*tasks)
+            finally:
+                for page in pages:
+                    await page.close()
+                await browser.close()
 
     logger.info(f"[search] Done. {sum(len(r['matches']) for r in results)} total matches across {len(results)} scanlators")
     return {"query": q, "results": list(results)}

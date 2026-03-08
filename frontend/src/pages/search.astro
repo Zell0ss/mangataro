@@ -72,7 +72,7 @@ import Layout from '../layouts/Layout.astro';
     <div x-show="!loading && searched && !error" class="space-y-8">
 
       <!-- No results at all -->
-      <template x-if="results.every(r => r.matches.length === 0 && !r.error)">
+      <template x-if="results.every(r => r.matches.length === 0)">
         <div class="text-center py-16 bg-ink-800/20 rounded-xl ring-1 ring-ink-700/20">
           <p class="text-ink-400 font-medium">No results found on any scanlator</p>
           <p class="text-ink-500 text-sm mt-1">Try different keywords</p>
@@ -98,7 +98,7 @@ import Layout from '../layouts/Layout.astro';
           <!-- Matches -->
           <template x-if="result.matches.length > 0">
             <div class="divide-y divide-ink-700/20">
-              <template x-for="match in result.matches" :key="match.url">
+              <template x-for="match in result.matches" :key="match.url + match.titulo">
                 <a
                   :href="match.url"
                   target="_blank"
