@@ -85,17 +85,22 @@ class VortexScans(BaseScanlator):
 
         def handle_request(request):
             nonlocal post_id
-            if 'api.vortexscans.org/api/chapters' in request.url and 'postId=' in request.url:
+            if 'api.vortexscans.org/api/' in request.url and 'postId=' in request.url:
                 m = re.search(r'postId=(\d+)', request.url)
+                if m:
+                    post_id = int(m.group(1))
+            elif 'api.vortexscans.org/api/' in request.url and 'targetId=' in request.url:
+                m = re.search(r'targetId=(\d+)', request.url)
                 if m:
                     post_id = int(m.group(1))
 
         self.page.on("request", handle_request)
         try:
-            if not await self.safe_goto(manga_url, timeout=30000):
+            if not await self.safe_goto(manga_url, timeout=45000):
                 logger.error(f"[{self.name}] Failed to load manga page: {manga_url}")
                 return None
-            for _ in range(20):
+            # JS fires API requests ~5s after domcontentloaded; poll for up to 20s
+            for _ in range(40):
                 if post_id is not None:
                     break
                 await asyncio.sleep(0.5)
