@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import manga, scanlators, tracking
+from api.routers import manga, scanlators, tracking, search
 import os
 from dotenv import load_dotenv
 
@@ -56,6 +56,7 @@ async def health():
 app.include_router(manga.router, prefix="/api/manga", tags=["manga"])
 app.include_router(scanlators.router, prefix="/api/scanlators", tags=["scanlators"])
 app.include_router(tracking.router, prefix="/api/tracking", tags=["tracking"])
+app.include_router(search.router, prefix="/api/search", tags=["search"])
 
 
 # Startup and shutdown events
