@@ -1,14 +1,41 @@
 # Ready for Tomorrow - Quick Start Guide
 
-**Date:** 2026-02-15 (End of Day)
-**Status:** Production + Enhancements ✅
-**Project:** Fully operational and actively maintained
-
-🎉 **PROJECT COMPLETE + NEW ENHANCEMENTS!** All core features operational with recent improvements.
+**Date:** 2026-03-08 (End of Day)
+**Status:** Production + New Features ✅
+**Project:** Fully operational with MangaDex plugin and cross-scanlator search
 
 ---
 
-## 🆕 Recent Enhancements (2026-02-13 to 2026-02-15)
+## 🆕 Recent Additions (2026-03-08)
+
+### MangaDex Scanlator Plugin ✅
+- **File:** `scanlators/manga_dex.py` — class `MangaDex`
+- **DB Record:** scanlator ID 34, `class_name='MangaDex'`
+- Uses **httpx** (not Playwright) — calls `api.mangadex.org` REST API directly
+- English chapters only, all scanlation groups included
+- `buscar_manga()` — returns title, URL, cover art
+- `obtener_capitulos()` — paginates with `CHAPTERS_LIMIT=100` (API hard limit), 0.5s delay between pages
+- URL format: `https://mangadex.org/title/{uuid}` — UUID extracted via regex
+- **Verified:** Girls × Vampire (manga ID 4) tracked 1 English chapter successfully
+- **Note:** "Bromance Book Club" not found on MangaDex under that title — may need manual search on mangadex.org
+
+### Cross-Scanlator Search Page ✅
+- **API:** `GET /api/search/?q={title}` (min_length=2, max_length=100, 30s timeout)
+- **File:** `api/routers/search.py` — registered at `/api/search` in `api/main.py`
+- **Frontend:** `frontend/src/pages/search.astro` — Alpine.js, shows results grouped by scanlator
+- **Nav:** Search link added to `frontend/src/components/Navigation.astro`
+- Queries all active scanlators with plugins in parallel via `asyncio.gather`
+- `_browser_lock = asyncio.Semaphore(1)` prevents concurrent Playwright launches (OOM risk)
+- Every scanlator appears in response — empty matches if nothing found, error string if failed
+- `finally` block guarantees browser/page cleanup on any exception
+
+### Pending: Map more manga to MangaDex
+- Use `/admin/map-sources?scanlator=34` to add MangaDex mappings
+- "Bromance Book Club" was not found — search mangadex.org directly for correct title
+
+---
+
+## 🆕 Earlier Enhancements (2026-02-13 to 2026-02-15)
 
 ### MadaraScans Plugin Implementation ✅
 - **Date:** 2026-02-13 to 2026-02-14
@@ -110,14 +137,16 @@
 
 The system is **100% complete and production-ready**:
 
-✅ **Database:** 94 manga, 28 scanlators, 199+ chapters
-✅ **AsuraScans Plugin:** Search, chapter extraction, parsing
+✅ **Database:** 94 manga, 34+ scanlators, chapters tracked
+✅ **Scanlator Plugins:** AsuraScans, RavenScans, MadaraScans (Playwright), MangaDex (httpx)
 ✅ **Tracking:** Automatic chapter discovery with duplicate detection
 ✅ **REST API:** 25+ endpoints including background job tracking
+✅ **Search API:** `GET /api/search/?q=...` — queries all plugins in parallel
 ✅ **Web Frontend:** Full Astro UI at http://localhost:4343
   - Updates feed homepage with mark-as-read buttons
-  - Library page with search and status filters
+  - Library page with server-side pagination + Alpine.js
   - Manga detail pages with chapter lists
+  - `/search` page — cross-scanlator search
   - Responsive design (mobile/tablet/desktop)
 ✅ **Automation:** Scheduled tracking via cron + n8n workflows
 ✅ **Notifications:** Discord webhooks for new chapters
@@ -266,12 +295,16 @@ The system is production-ready with 12 days to spare before MangaTaro closes.
 │   └── routers/
 │       ├── manga.py             # ✅ Manga CRUD endpoints
 │       ├── scanlators.py        # ✅ Scanlator endpoints
-│       └── tracking.py          # ✅ Tracking endpoints
+│       ├── tracking.py          # ✅ Tracking endpoints
+│       └── search.py            # ✅ Cross-scanlator search
 ├── scanlators/
 │   ├── base.py                  # ✅ Abstract base class
 │   ├── __init__.py              # ✅ Auto-discovery system
 │   ├── template.py              # ✅ Template for new plugins
-│   └── asura_scans.py           # ✅ AsuraScans implementation
+│   ├── asura_scans.py           # ✅ AsuraScans implementation
+│   ├── raven_scans.py           # ✅ RavenScans implementation
+│   ├── madara_scans.py          # ✅ MadaraScans implementation
+│   └── manga_dex.py             # ✅ MangaDex (httpx REST API)
 ├── scripts/
 │   ├── create_db.sql            # ✅ Database schema
 │   ├── extract_mangataro.py     # ✅ MangaTaro extraction
@@ -342,6 +375,9 @@ All changes committed. Clean working directory.
 - POST `/api/scanlators/` - Create scanlator
 - PUT `/api/scanlators/{id}` - Update scanlator
 - DELETE `/api/scanlators/{id}` - Delete scanlator
+
+**Search:**
+- GET `/api/search/?q={title}` - Search all scanlators in parallel (min 2 chars, 30s timeout)
 
 **Tracking:**
 - GET `/api/tracking/chapters/unread` - Get unread chapters
