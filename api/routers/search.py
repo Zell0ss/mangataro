@@ -42,7 +42,7 @@ async def _search_one(plugin_class, page, query: str, scanlator_name: str) -> di
 
 @router.get("/")
 async def search_manga(
-    q: str = Query(..., min_length=2, description="Title keywords to search"),
+    q: str = Query(..., min_length=2, max_length=100, description="Title keywords to search"),
     db: Session = Depends(get_db)
 ):
     """
@@ -73,21 +73,22 @@ async def search_manga(
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
+        pages = []
+        try:
+            # Create one page per scanlator (shared browser, lower resource use)
+            for _ in searchable:
+                pages.append(await browser.new_page())
 
-        # Create one page per scanlator (shared browser, lower resource use)
-        pages = [await browser.new_page() for _ in searchable]
+            tasks = [
+                _search_one(plugin_class, pages[i], q, s.name)
+                for i, (s, plugin_class) in enumerate(searchable)
+            ]
 
-        tasks = [
-            _search_one(plugin_class, pages[i], q, s.name)
-            for i, (s, plugin_class) in enumerate(searchable)
-        ]
-
-        results = await asyncio.gather(*tasks)
-
-        # Clean up pages and browser
-        for page in pages:
-            await page.close()
-        await browser.close()
+            results = await asyncio.gather(*tasks)
+        finally:
+            for page in pages:
+                await page.close()
+            await browser.close()
 
     logger.info(f"[search] Done. {sum(len(r['matches']) for r in results)} total matches across {len(results)} scanlators")
     return {"query": q, "results": list(results)}
