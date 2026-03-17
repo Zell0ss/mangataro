@@ -8,9 +8,12 @@ Sets up Loguru with:
 - Separate files for different log levels
 - Structured JSON logging for errors
 - Console output with colors
+- LogCentral JSON sink (for Vector aggregation → Grafana Cloud)
 """
 import sys
+import json
 from pathlib import Path
+from datetime import timezone
 from loguru import logger
 import os
 
@@ -88,6 +91,23 @@ logger.add(
     filter=lambda record: record["extra"].get("component") == "api",
     enqueue=True,
 )
+
+# LogCentral JSON sink — Vector reads this file and forwards to Grafana Cloud
+# Separate file to avoid mixing text and JSON in the same file
+_lc_log_path = LOGS_DIR / "mangataro-lc.log"
+
+def _logcentral_sink(message):
+    record = message.record
+    entry = {
+        "timestamp": record["time"].astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+        "level": record["level"].name,
+        "source": "mangataro",
+        "message": record["message"],
+    }
+    with open(_lc_log_path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+logger.add(_logcentral_sink, level="DEBUG")
 
 # Log the configuration
 logger.info("Logging system initialized")

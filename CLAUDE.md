@@ -18,6 +18,7 @@
 8. [Common Tasks](#common-tasks)
 9. [Troubleshooting](#troubleshooting)
 10. [What NOT to Change](#what-not-to-change)
+11. [Scanlators Descartados](#-scanlators-descartados-no-implementables)
 
 ---
 
@@ -1063,6 +1064,27 @@ GROUP BY m.id, s.id;
 
 ---
 
+## 🚫 Scanlators Descartados (No Implementables)
+
+Esta sección registra los scanlators que se intentaron añadir pero no fue posible por razones técnicas.
+**Si el usuario vuelve a pedir uno de estos, avisar antes de intentarlo.**
+
+| Scanlator | Estado | Razón | Fecha |
+|-----------|--------|-------|-------|
+| **Bato.to** | ❌ Cerrado | El sitio cerró permanentemente el 2026-01-19. No hay nada que scrappear. | 2026-03-08 |
+| **ManhwaClan** | ❌ Bloqueado | Usa Cloudflare Turnstile. Playwright en modo headless no puede superar el challenge. | 2026-03-08 |
+| **Manta.net** | ❌ Bloqueado | Usa Cloudflare Turnstile. Mismo problema que ManhwaClan — inaccesible con Playwright headless. | 2026-03-08 |
+
+### Notas sobre los bloqueos
+
+**Cloudflare Turnstile** (ManhwaClan, Manta.net): A diferencia del Cloudflare estándar que Playwright headless a veces pasa, Turnstile requiere ejecución de JavaScript visible en un contexto de navegador real. No hay workaround conocido sin puppeteer-extra-plugin-stealth + parches de fingerprint muy agresivos, y aun así es frágil. La solución sería usar un servicio externo de resolución de captchas (2captcha, CapSolver) que tiene coste económico y complejidad operativa.
+
+**Si en el futuro se quiere reintentar alguno:**
+- Bato.to: verificar primero si volvió a abrir (hubo rumores de reapertura)
+- Cloudflare Turnstile: evaluar `playwright-stealth` o servicios como CapSolver antes de implementar
+
+---
+
 ## 📝 Conventions for This File
 
 **When updating CLAUDE.md:**
@@ -1078,8 +1100,8 @@ GROUP BY m.id, s.id;
 
 ---
 
-**Last Updated:** 2026-02-03
-**Updated By:** Claude (via Subagent-Driven Development)
-**Version:** 1.0
+**Last Updated:** 2026-03-16
+**Updated By:** Claude
+**Version:** 1.1
 **Project Status:** Production Ready ✅
 
