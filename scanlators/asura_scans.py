@@ -1,12 +1,19 @@
 """
 AsuraScans scanlator plugin.
 
-Plugin for AsuraScans (asuracomic.net) - Popular English manga/manhwa scanlation site.
+Plugin for AsuraScans (asurascans.com) - Popular English manga/manhwa scanlation site.
 Known for translating Korean manhwa and Chinese manhua.
+
+Domain history:
+  - Was asurascans.com/comics/ originally
+  - Moved to asuracomic.net/series/ for a period
+  - Moved back to asurascans.com/comics/ (asuracomic.net now redirects to homepage)
 """
 
 import re
+import httpx
 from datetime import datetime, timedelta
+from urllib.parse import quote_plus
 from playwright.async_api import Page
 from loguru import logger
 
@@ -15,7 +22,7 @@ from scanlators.base import BaseScanlator
 
 class AsuraScans(BaseScanlator):
     """
-    Plugin for AsuraScans (asuracomic.net).
+    Plugin for AsuraScans (asurascans.com).
 
     AsuraScans is a popular scanlation group known for high-quality
     translations of Korean manhwa and Chinese manhua.
@@ -26,11 +33,12 @@ class AsuraScans(BaseScanlator):
         super().__init__(playwright_page)
 
         self.name = "Asura Scans"
-        self.base_url = "https://asuracomic.net"
+        self.base_url = "https://asurascans.com"
+        self._api_base = "https://api.asurascans.com"
 
     async def buscar_manga(self, titulo: str) -> list[dict]:
         """
-        Search for manga by title on AsuraScans.
+        Search for manga by title on AsuraScans via the public REST API.
 
         Args:
             titulo: The manga title to search for
@@ -40,91 +48,25 @@ class AsuraScans(BaseScanlator):
         """
         logger.info(f"[{self.name}] Searching for: {titulo}")
 
-        # AsuraScans search URL pattern
-        search_url = f"{self.base_url}/series?name={titulo}"
-
-        # Navigate to search page
-        if not await self.safe_goto(search_url):
-            logger.error(f"[{self.name}] Failed to load search page")
-            return []
-
         try:
-            # Wait for search results to load
-            # AsuraScans uses a grid layout for manga listings
-            await self.page.wait_for_selector(".grid", timeout=10000)
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                resp = await client.get(
+                    f"{self._api_base}/api/search",
+                    params={"q": titulo},
+                )
+                resp.raise_for_status()
+                data = resp.json()
 
-            # Wait a bit more for dynamic content
-            import asyncio
-            await asyncio.sleep(2)
-
-            # Extract search results using JavaScript evaluation
-            # AsuraScans uses grid with direct anchor tags containing series info
-            resultados = await self.page.evaluate("""
-                () => {
-                    // Find the main grid containing search results (usually the 3rd grid)
-                    const grids = document.querySelectorAll('.grid');
-                    let searchGrid = null;
-
-                    // Look for grid with manga links (contains 'series/' in href)
-                    for (const grid of grids) {
-                        const seriesLinks = grid.querySelectorAll('a[href*="series/"]');
-                        if (seriesLinks.length > 0) {
-                            searchGrid = grid;
-                            break;
-                        }
-                    }
-
-                    if (!searchGrid) {
-                        return [];
-                    }
-
-                    // Extract all series links from the grid
-                    const items = searchGrid.querySelectorAll('a[href*="series/"]');
-                    return Array.from(items).map(item => {
-                        // Get the title from h3 or span element
-                        // Try to find the main title, skipping genre tags like "MANHWA", "MANGA", etc.
-                        const titleElements = item.querySelectorAll('h3, span[class*="font"], span[class*="text"]');
-                        let titulo = '';
-
-                        for (const el of titleElements) {
-                            const text = el.textContent.trim();
-                            // Skip common genre tags
-                            if (text && !['MANHWA', 'MANGA', 'MANHUA', 'WEBTOON'].includes(text.toUpperCase()) && text.length > 2) {
-                                titulo = text;
-                                break;
-                            }
-                        }
-
-                        // Fallback: get from link's direct text or any span
-                        if (!titulo) {
-                            const spans = item.querySelectorAll('span');
-                            for (const span of spans) {
-                                const text = span.textContent.trim();
-                                if (text && text.length > 3 && text.length < 100 && !['MANHWA', 'MANGA', 'MANHUA'].includes(text.toUpperCase())) {
-                                    titulo = text;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Get the URL (make it absolute)
-                        let url = item.href;
-                        if (url && !url.startsWith('http')) {
-                            url = window.location.origin + '/' + url.replace(/^\//, '');
-                        }
-
-                        // Get cover image
-                        const imgElement = item.querySelector('img');
-                        const portada = imgElement ? (imgElement.src || imgElement.dataset.src || imgElement.getAttribute('src') || '') : '';
-
-                        // Only return if we have at least a title and URL
-                        if (titulo && url && url.includes('series/')) {
-                            return { titulo, url, portada };
-                        }
-                        return null;
-                    }).filter(item => item !== null);
-                }
-            """)
+            resultados = []
+            for item in data.get("data", []):
+                slug = item.get("slug", "")
+                if not slug:
+                    continue
+                url = f"{self.base_url}/comics/{slug}"
+                titulo_text = item.get("title", "")
+                portada = item.get("cover", "")
+                if titulo_text:
+                    resultados.append({"titulo": titulo_text, "url": url, "portada": portada})
 
             logger.info(f"[{self.name}] Found {len(resultados)} results for '{titulo}'")
             return resultados
@@ -151,8 +93,9 @@ class AsuraScans(BaseScanlator):
             return []
 
         try:
-            # Wait for chapter list to load
-            await self.page.wait_for_selector('a[href*="/chapter"]', timeout=10000)
+            # Wait for chapter list to render (React)
+            # Chapters are attached to the DOM but not necessarily visible (tabs)
+            await self.page.wait_for_selector('a[href*="chapter"]', state='attached', timeout=15000)
 
             # Click on "All" tab to show all chapters (not just weekly/monthly)
             try:

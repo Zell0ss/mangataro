@@ -1074,14 +1074,18 @@ Esta sección registra los scanlators que se intentaron añadir pero no fue posi
 | **Bato.to** | ❌ Cerrado | El sitio cerró permanentemente el 2026-01-19. No hay nada que scrappear. | 2026-03-08 |
 | **ManhwaClan** | ❌ Bloqueado | Usa Cloudflare Turnstile. Playwright en modo headless no puede superar el challenge. | 2026-03-08 |
 | **Manta.net** | ❌ Bloqueado | Usa Cloudflare Turnstile. Mismo problema que ManhwaClan — inaccesible con Playwright headless. | 2026-03-08 |
+| **mangataro.org** | ❌ Auth requerida | El sitio volvió a abrir (estaba cerrado en Jan 2026) pero ahora requiere login para ver capítulos. `/auth/me` devuelve 401 sin token JWT — el `.chapter-list` se queda en spinner indefinidamente. No hay API pública ni scraping posible sin credenciales de usuario. | 2026-03-18 |
 
 ### Notas sobre los bloqueos
 
 **Cloudflare Turnstile** (ManhwaClan, Manta.net): A diferencia del Cloudflare estándar que Playwright headless a veces pasa, Turnstile requiere ejecución de JavaScript visible en un contexto de navegador real. No hay workaround conocido sin puppeteer-extra-plugin-stealth + parches de fingerprint muy agresivos, y aun así es frágil. La solución sería usar un servicio externo de resolución de captchas (2captcha, CapSolver) que tiene coste económico y complejidad operativa.
 
+**Auth JWT** (mangataro.org): La lista de capítulos se carga vía JS que primero llama a `/auth/me`. Sin token válido, la llamada devuelve 401 y los capítulos nunca se cargan. Usar credenciales reales en un scraper es frágil y contra ToS.
+
 **Si en el futuro se quiere reintentar alguno:**
 - Bato.to: verificar primero si volvió a abrir (hubo rumores de reapertura)
 - Cloudflare Turnstile: evaluar `playwright-stealth` o servicios como CapSolver antes de implementar
+- mangataro.org: solo viable si el sitio vuelve a permitir acceso anónimo a los capítulos
 
 ---
 
