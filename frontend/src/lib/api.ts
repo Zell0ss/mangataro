@@ -113,12 +113,14 @@ export const api = {
     limit?: number;
     search?: string;
     status?: string;
+    scanlator_id?: number;
   } = {}): Promise<PaginatedMangaResponse> {
     const searchParams = new URLSearchParams();
     searchParams.set('limit', String(params.limit ?? 48));
     searchParams.set('skip', String(params.skip ?? 0));
     if (params.search) searchParams.set('search', params.search);
     if (params.status && params.status !== 'all') searchParams.set('status', params.status);
+    if (params.scanlator_id) searchParams.set('scanlator_id', String(params.scanlator_id));
     const response = await fetch(`${API_BASE}/api/manga?${searchParams}`);
     if (!response.ok) throw new Error('Failed to fetch manga');
     return response.json();

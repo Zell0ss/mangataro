@@ -4,32 +4,8 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="Search - MangaTaro">
   <div
+    x-data="search"
     class="max-w-4xl mx-auto"
-    x-data="{
-      query: '',
-      loading: false,
-      searched: false,
-      results: [],
-      error: '',
-      async doSearch() {
-        if (this.query.trim().length < 2) return;
-        this.loading = true;
-        this.searched = false;
-        this.results = [];
-        this.error = '';
-        try {
-          const res = await fetch(`${window.__API_BASE}/api/search?q=${encodeURIComponent(this.query.trim())}`);
-          if (!res.ok) throw new Error(`Server error: ${res.status}`);
-          const data = await res.json();
-          this.results = data.results || [];
-        } catch (e) {
-          this.error = e.message || 'Search failed';
-        } finally {
-          this.loading = false;
-          this.searched = true;
-        }
-      }
-    }"
   >
     <!-- Header -->
     <div class="mb-8">
@@ -53,23 +29,23 @@ import Layout from '../layouts/Layout.astro';
         class="px-6 py-2.5 bg-crimson-600 hover:bg-crimson-500 disabled:hover:bg-crimson-600 text-white rounded-xl font-semibold text-sm transition-all"
       >
         <span x-show="!loading">Search</span>
-        <span x-show="loading">Searching...</span>
+        <span x-show="loading" style="display:none">Searching...</span>
       </button>
     </div>
 
     <!-- Loading State -->
-    <div x-show="loading" class="text-center py-16">
+    <div x-show="loading" style="display:none" class="text-center py-16">
       <div class="inline-block w-8 h-8 border-2 border-crimson-600 border-t-transparent rounded-full animate-spin mb-4"></div>
       <p class="text-ink-400 text-sm">Searching all scanlators — this may take up to 30 seconds...</p>
     </div>
 
     <!-- Error State -->
-    <div x-show="!loading && error" class="text-center py-12 bg-ink-800/20 rounded-xl ring-1 ring-crimson-700/30">
+    <div x-show="!loading && error" style="display:none" class="text-center py-12 bg-ink-800/20 rounded-xl ring-1 ring-crimson-700/30">
       <p class="text-crimson-400 font-medium" x-text="error"></p>
     </div>
 
     <!-- Results -->
-    <div x-show="!loading && searched && !error" class="space-y-8">
+    <div x-show="!loading && searched && !error" style="display:none" class="space-y-8">
 
       <!-- No results at all -->
       <template x-if="results.every(r => r.matches.length === 0)">
@@ -144,3 +120,39 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 </Layout>
+
+<script>
+  function registerSearch() {
+    Alpine.data('search', () => ({
+      query: '',
+      loading: false,
+      searched: false,
+      results: [],
+      error: '',
+      async doSearch() {
+        if (this.query.trim().length < 2) return;
+        this.loading = true;
+        this.searched = false;
+        this.results = [];
+        this.error = '';
+        try {
+          const res = await fetch(window.__API_BASE + '/api/search/?q=' + encodeURIComponent(this.query.trim()));
+          if (!res.ok) throw new Error('Server error: ' + res.status);
+          const data = await res.json();
+          this.results = data.results || [];
+        } catch (e) {
+          this.error = e.message || 'Search failed';
+        } finally {
+          this.loading = false;
+          this.searched = true;
+        }
+      }
+    }));
+  }
+
+  if (window.Alpine) {
+    registerSearch();
+  } else {
+    document.addEventListener('alpine:init', registerSearch);
+  }
+</script>

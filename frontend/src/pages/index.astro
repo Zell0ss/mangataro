@@ -2,15 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 import ChapterItem from '../components/ChapterItem.astro';
 import { api } from '../lib/api';
-import { getCoverUrl, formatTimeAgo } from '../lib/utils';
 
-// Fetch both: latest per manga (for grid) and unread (for list)
 const [latestChapters, unreadChapters] = await Promise.all([
   api.getLatestChapters(100),
   api.getUnreadChapters(500),
 ]);
 
-// Count unread per manga
 const unreadCountPerManga = new Map<number, number>();
 for (const ch of unreadChapters) {
   const mangaId = ch.manga_scanlator.manga.id;
@@ -23,18 +20,23 @@ const mangaUpdates = latestChapters.map(ch => ({
   scanlator: ch.manga_scanlator.scanlator,
   unreadCount: unreadCountPerManga.get(ch.manga_scanlator.manga.id) || 0,
 }));
+
+// Unique scanlators present in updates, preserving order of first appearance
+const scanlatorsMap = new Map<number, { id: number; name: string }>();
+for (const u of mangaUpdates) {
+  if (!scanlatorsMap.has(u.scanlator.id)) scanlatorsMap.set(u.scanlator.id, u.scanlator);
+}
+const scanlatorsList = [...scanlatorsMap.values()];
 ---
 
 <Layout title="Updates - MangaTaro">
-  <div class="max-w-5xl mx-auto" x-data="{
-    mode: 'latest',
-    showNSFW: localStorage.getItem('showNSFW') === 'true',
-    isVisible(element) {
-      const isNSFW = element.dataset.nsfw === 'true';
-      const nsfwMatch = this.showNSFW || !isNSFW;
-      return nsfwMatch;
-    }
-  }">
+  <div
+    class="max-w-5xl mx-auto"
+    x-cloak
+    x-data="updates"
+    data-manga={JSON.stringify(mangaUpdates)}
+    data-scanlators={JSON.stringify(scanlatorsList)}
+  >
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
       <div>
@@ -44,9 +46,19 @@ const mangaUpdates = latestChapters.map(ch => ({
         </p>
       </div>
 
-      <!-- Mode Toggle & NSFW Toggle -->
       {mangaUpdates.length > 0 && (
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Scanlator Dropdown -->
+          <select
+            x-model="selectedScanlator"
+            class="bg-ink-800/80 border border-ink-700/40 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink-300 focus:outline-none focus:ring-2 focus:ring-crimson-600/40 cursor-pointer transition"
+          >
+            <option value="">All scanlators</option>
+            <template x-for="s in scanlatorsList" :key="s.id">
+              <option :value="String(s.id)" x-text="s.name"></option>
+            </template>
+          </select>
+
           <!-- Mode Toggle -->
           <div class="flex bg-ink-800/80 rounded-lg p-1 ring-1 ring-ink-700/40">
             <button
@@ -66,18 +78,16 @@ const mangaUpdates = latestChapters.map(ch => ({
           </div>
 
           <!-- NSFW Toggle -->
-          <div class="flex items-center gap-2">
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                class="sr-only peer"
-                x-model="showNSFW"
-                @change="localStorage.setItem('showNSFW', showNSFW)"
-              />
-              <div class="w-11 h-6 bg-ink-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-crimson-600/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-crimson-600"></div>
-              <span class="ml-3 text-sm font-medium text-ink-300">Show NSFW</span>
-            </label>
-          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              class="sr-only peer"
+              x-model="showNSFW"
+              @change="localStorage.setItem('showNSFW', showNSFW)"
+            />
+            <div class="w-11 h-6 bg-ink-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-crimson-600/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-crimson-600"></div>
+            <span class="ml-3 text-sm font-medium text-ink-300">Show NSFW</span>
+          </label>
         </div>
       )}
     </div>
@@ -94,61 +104,76 @@ const mangaUpdates = latestChapters.map(ch => ({
       </div>
     ) : (
       <>
-        <!-- Latest per Series View -->
+        <!-- Latest per Series View (Alpine-rendered, grouped by date) -->
         <div x-show="mode === 'latest'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {mangaUpdates.map(({ chapter, manga, scanlator, unreadCount }) => (
-              <a
-                href={`/manga/${manga.id}`}
-                class="group relative rounded-xl overflow-hidden bg-ink-800 ring-1 ring-ink-700/30 hover:ring-crimson-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-crimson-950/20"
-                x-show="isVisible($el)"
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 scale-95"
-                x-transition:enter-end="opacity-100 scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 scale-100"
-                x-transition:leave-end="opacity-0 scale-95"
-                data-nsfw={manga.nsfw}
-              >
-                <div class="aspect-[2/3] overflow-hidden">
-                  <img
-                    src={getCoverUrl(manga.cover_filename)}
-                    alt={manga.title}
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div class="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/30 to-transparent"></div>
-                </div>
 
-                <!-- Unread count badge -->
-                <div class="absolute top-2.5 right-2.5 bg-crimson-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-lg ring-2 ring-ink-800">
-                  {unreadCount}
-                </div>
-
-                <!-- Info Overlay -->
-                <div class="absolute bottom-0 left-0 right-0 p-3">
-                  <h3 class="font-display font-semibold text-ink-50 line-clamp-2 text-sm leading-snug">{manga.title}</h3>
-                  <p class="text-crimson-400 text-xs font-semibold mt-1">Ch. {chapter.chapter_number}</p>
-                  <p class="text-ink-400 text-[11px] mt-0.5">{formatTimeAgo(chapter.detected_date)}</p>
-                </div>
-              </a>
-            ))}
+          <!-- Empty state when filters hide everything -->
+          <div x-show="filteredGroups.length === 0" class="text-center py-24">
+            <p class="text-ink-400 text-lg font-display font-semibold">No series match your filters</p>
           </div>
+
+          <template x-for="group in filteredGroups" :key="group.label">
+            <div class="mb-8">
+              <!-- Date separator (Style A) -->
+              <div class="flex items-center gap-3 mb-4">
+                <span class="text-ink-400 text-xs font-semibold uppercase tracking-widest" x-text="group.label"></span>
+                <div class="flex-1 h-px bg-ink-700/50"></div>
+              </div>
+
+              <!-- Cards grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <template x-for="u in group.items" :key="u.chapter.id">
+                  <a
+                    :href="'/manga/' + u.manga.id"
+                    class="group relative rounded-xl overflow-hidden bg-ink-800 ring-1 ring-ink-700/30 hover:ring-crimson-600/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-crimson-950/20"
+                  >
+                    <div class="aspect-[2/3] overflow-hidden">
+                      <img
+                        :src="u.manga.cover_filename ? '/data/img/' + u.manga.cover_filename : '/placeholder-cover.jpg'"
+                        :alt="u.manga.title"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                      <div class="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/30 to-transparent"></div>
+                    </div>
+
+                    <!-- Unread count badge -->
+                    <div class="absolute top-2.5 right-2.5 bg-crimson-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-lg ring-2 ring-ink-800" x-text="u.unreadCount"></div>
+
+                    <!-- Scanlator badge (visible when "All scanlators" selected) -->
+                    <div
+                      x-show="!selectedScanlator"
+                      class="absolute top-2.5 left-2.5 bg-ink-900/80 text-ink-300 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ring-1 ring-ink-700/40 truncate max-w-[calc(100%-2.5rem)]"
+                      x-text="u.scanlator.name"
+                    ></div>
+
+                    <!-- Info Overlay -->
+                    <div class="absolute bottom-0 left-0 right-0 p-3">
+                      <h3 class="font-display font-semibold text-ink-50 line-clamp-2 text-sm leading-snug" x-text="u.manga.title"></h3>
+                      <p class="text-crimson-400 text-xs font-semibold mt-1" x-text="'Ch. ' + u.chapter.chapter_number"></p>
+                      <p class="text-ink-400 text-[11px] mt-0.5" x-text="timeAgo(u.chapter.detected_date)"></p>
+                    </div>
+                  </a>
+                </template>
+              </div>
+            </div>
+          </template>
         </div>
 
-        <!-- All Updates View -->
+        <!-- All Updates View (SSR-rendered, client-side filtered) -->
         <div x-show="mode === 'all'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
           <div class="space-y-2">
             {unreadChapters.map((chapter) => (
               <div
-                x-show="isVisible($el)"
+                x-show="isVisibleEl($el)"
                 x-transition:enter="transition ease-out duration-200"
                 x-transition:enter-start="opacity-0 scale-95"
                 x-transition:enter-end="opacity-100 scale-100"
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                data-nsfw={chapter.manga_scanlator.manga.nsfw}
+                data-nsfw={String(chapter.manga_scanlator.manga.nsfw)}
+                data-scanlator-id={String(chapter.manga_scanlator.scanlator.id)}
               >
                 <ChapterItem chapter={chapter} />
               </div>
@@ -159,3 +184,77 @@ const mangaUpdates = latestChapters.map(ch => ({
     )}
   </div>
 </Layout>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('updates', () => ({
+      mode: 'latest',
+      showNSFW: localStorage.getItem('showNSFW') === 'true',
+      selectedScanlator: '',
+      allManga: [] as any[],
+      scanlatorsList: [] as any[],
+
+      init() {
+        this.allManga = JSON.parse((this.$el as HTMLElement).dataset.manga || '[]');
+        this.scanlatorsList = JSON.parse((this.$el as HTMLElement).dataset.scanlators || '[]');
+      },
+
+      // For SSR-rendered "All Updates" items (checks data attributes)
+      isVisibleEl(el: HTMLElement) {
+        const nsfw = el.dataset.nsfw === 'true';
+        const nsfwOk = this.showNSFW || !nsfw;
+        const scanlatorOk = !this.selectedScanlator || el.dataset.scanlatorId === this.selectedScanlator;
+        return nsfwOk && scanlatorOk;
+      },
+
+      // For Alpine-rendered "Latest" items
+      isVisible(u: any) {
+        const nsfwOk = this.showNSFW || !u.manga.nsfw;
+        const scanlatorOk = !this.selectedScanlator || String(u.scanlator.id) === this.selectedScanlator;
+        return nsfwOk && scanlatorOk;
+      },
+
+      get filteredGroups() {
+        const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const now = new Date();
+        const today = startOfDay(now);
+        const yesterday = today - 86400000;
+        const weekAgo = today - 7 * 86400000;
+        const monthAgo = today - 30 * 86400000;
+
+        const buckets: { label: string; items: any[] }[] = [
+          { label: 'Today', items: [] },
+          { label: 'Yesterday', items: [] },
+          { label: 'Last 7 days', items: [] },
+          { label: 'Last 30 days', items: [] },
+          { label: 'Older', items: [] },
+        ];
+
+        for (const u of this.allManga) {
+          if (!this.isVisible(u)) continue;
+          const d = startOfDay(new Date(u.chapter.detected_date));
+          if (d >= today) buckets[0].items.push(u);
+          else if (d >= yesterday) buckets[1].items.push(u);
+          else if (d >= weekAgo) buckets[2].items.push(u);
+          else if (d >= monthAgo) buckets[3].items.push(u);
+          else buckets[4].items.push(u);
+        }
+
+        return buckets.filter(b => b.items.length > 0);
+      },
+
+      timeAgo(dateString: string) {
+        const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+        const intervals: [string, number][] = [
+          ['year', 31536000], ['month', 2592000], ['week', 604800],
+          ['day', 86400], ['hour', 3600], ['minute', 60],
+        ];
+        for (const [unit, s] of intervals) {
+          const n = Math.floor(seconds / s);
+          if (n >= 1) return `${n} ${unit}${n > 1 ? 's' : ''} ago`;
+        }
+        return 'just now';
+      },
+    }));
+  });
+</script>

@@ -151,17 +151,33 @@ class TrackerService:
 
             # Process each mapping
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(
+                    headless=True,
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                    ],
+                )
+                context = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    viewport={"width": 1920, "height": 1080},
+                    extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
+                )
+                await context.add_init_script(
+                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+                )
 
                 for mapping in mappings:
                     try:
-                        await self._process_mapping(job, mapping, browser, db)
+                        await self._process_mapping(job, mapping, context, db)
                         job.processed_mappings += 1
                     except Exception as e:
                         error_msg = f"Error processing mapping {mapping.id}: {str(e)}"
                         logger.error(error_msg)
                         job.errors.append(error_msg)
 
+                await context.close()
                 await browser.close()
 
             job.status = "completed"
@@ -183,7 +199,7 @@ class TrackerService:
             job.completed_at = datetime.utcnow()
             db.close()
 
-    async def _process_mapping(self, job: TrackingJob, mapping, browser, db):
+    async def _process_mapping(self, job: TrackingJob, mapping, context, db):
         """Process a single manga-scanlator mapping."""
         manga = mapping.manga
         scanlator = mapping.scanlator
@@ -195,7 +211,7 @@ class TrackerService:
         if not plugin_class:
             raise ValueError(f"No plugin found for class_name: {scanlator.class_name}")
 
-        page = await browser.new_page()
+        page = await context.new_page()
         plugin = plugin_class(page)
 
         try:

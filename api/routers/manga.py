@@ -15,6 +15,7 @@ async def list_manga(
     limit: int = Query(48, ge=1, le=500),
     status: Optional[models.MangaStatus] = None,
     search: Optional[str] = None,
+    scanlator_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -24,8 +25,20 @@ async def list_manga(
     - **limit**: Maximum number of records to return (default 48, max 500)
     - **status**: Filter by manga status (reading, completed, on_hold, plan_to_read)
     - **search**: Search in title and alternative titles
+    - **scanlator_id**: Filter to manga tracked by this scanlator (verified mappings only)
     """
     query = db.query(models.Manga)
+
+    # Filter by scanlator (join to verified mappings)
+    if scanlator_id:
+        query = query.join(
+            models.MangaScanlator,
+            and_(
+                models.MangaScanlator.manga_id == models.Manga.id,
+                models.MangaScanlator.scanlator_id == scanlator_id,
+                models.MangaScanlator.manually_verified == True,
+            )
+        )
 
     # Filter by status
     if status:

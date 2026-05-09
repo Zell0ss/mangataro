@@ -18,6 +18,20 @@ class RavenScans(BaseScanlator):
         self.name = "RavenScans"
         self.base_url = "https://ravenscans.org"
 
+    async def _handle_cloudflare(self, timeout_ms: int = 12000) -> None:
+        """Wait for Cloudflare managed challenge to auto-resolve."""
+        try:
+            title = await self.page.title()
+            if any(t in title.lower() for t in ["just a moment", "verificaci", "security check"]):
+                logger.info(f"[{self.name}] Cloudflare challenge detected, waiting up to {timeout_ms // 1000}s...")
+                await self.page.wait_for_function(
+                    "() => !document.title.toLowerCase().match(/just a moment|verificaci|security check/)",
+                    timeout=timeout_ms,
+                )
+                logger.info(f"[{self.name}] Cloudflare challenge resolved")
+        except Exception:
+            logger.warning(f"[{self.name}] Cloudflare challenge did not auto-resolve within timeout")
+
     async def buscar_manga(self, titulo: str) -> list[dict]:
         """
         Search for manga on Raven Scans.
@@ -36,27 +50,24 @@ class RavenScans(BaseScanlator):
             if not await self.safe_goto(search_url):
                 return []
 
-            # Wait for search results to load
-            await self.page.wait_for_selector("article.item-thumb, .c-tabs-item__content", timeout=10000)
+            await self._handle_cloudflare()
+
+            # Wait for search results container
+            await self.page.wait_for_selector(".listupd", timeout=10000)
 
             resultados = []
 
-            # Try to find manga results (common selectors for WordPress manga themes)
-            items = await self.page.locator("article.item-thumb, .post-title a, .manga-item").all()
+            # Each result is .bs > .bsx > a with href and title attributes
+            items = await self.page.locator(".listupd .bs").all()
 
             for item in items:
                 try:
-                    # Try to get title and URL
-                    link = await item.locator("a").first
-                    if not link:
-                        link = item
-
+                    link = item.locator("a").first
                     url = await link.get_attribute("href")
-                    titulo_text = await link.text_content()
+                    titulo_text = await link.get_attribute("title")
 
-                    # Try to get cover image
-                    img = await item.locator("img").first
-                    portada = await img.get_attribute("src") if img else ""
+                    img_el = item.locator("img").first
+                    portada = await img_el.get_attribute("src") if await img_el.count() > 0 else ""
 
                     if url and titulo_text:
                         resultados.append({
@@ -90,6 +101,8 @@ class RavenScans(BaseScanlator):
 
             if not await self.safe_goto(manga_url):
                 return []
+
+            await self._handle_cloudflare()
 
             # Wait for chapters to load (JavaScript renders them)
             # Raven Scans uses .chbox containers for chapters
